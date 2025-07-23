@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { usePlayer } from '@/contexts/PlayerContext';
 
 const AVATAR_OPTIONS = [
   { id: 'male1', url: '/avatars/male/1.webp', gender: 'male' },
@@ -24,6 +26,7 @@ const AVATAR_OPTIONS = [
 
 export default function PlayerCreationForm() {
   const router = useRouter();
+  const { refreshPlayer } = usePlayer();
   const [name, setName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('');
   const [error, setError] = useState('');
@@ -57,6 +60,9 @@ export default function PlayerCreationForm() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create player');
       }
+
+      // Refresh the player context to get the new player data
+      await refreshPlayer();
 
       // Redirect to the game
       router.push('/game');
@@ -102,9 +108,11 @@ export default function PlayerCreationForm() {
                     : 'border-gray-200 hover:border-indigo-300'
                 }`}
               >
-                <img
+                <Image
                   src={avatar.url}
                   alt={`${avatar.gender} avatar`}
+                  width={64}
+                  height={64}
                   className="w-full h-auto"
                 />
                 <p className="text-center mt-2 text-sm capitalize">{avatar.gender}</p>

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { PrismaClient } from '@prisma/client';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const kingdoms = await prisma.kingdom.findMany({
       include: { _count: { select: { players: true } } }
     });
-    let kingdom = kingdoms.find(k => k._count.players < 50);
+    let kingdom = kingdoms.find((k: any) => k._count.players < 50);
 
     if (!kingdom) {
       // Create a new kingdom if none are available

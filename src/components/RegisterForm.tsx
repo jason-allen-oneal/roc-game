@@ -46,7 +46,7 @@ export default function RegisterForm() {
       // Redirect to login or game
       router.push('/login?message=Registration successful! Please log in.');
       router.refresh();
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);

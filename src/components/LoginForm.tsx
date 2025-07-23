@@ -32,7 +32,7 @@ export default function LoginForm() {
 
       router.push('/game');
       router.refresh();
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
