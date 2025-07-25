@@ -11,21 +11,32 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Find the user by email
+    console.log(session.user);
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: { player: true }
+      where: {
+        id: session.user.id
+      },
+      include: { players: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    if (!user.player) {
+    if (!user.players || user.players.length === 0) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
-    return NextResponse.json(user.player);
+    // If user has a lastPlayedKingdom, find that specific player
+    if (user.lastPlayedKingdom) {
+      const lastPlayer = user.players.find(player => player.kingdomId === user.lastPlayedKingdom);
+      if (lastPlayer) {
+        return NextResponse.json(lastPlayer);
+      }
+    }
+
+    // Fallback to the first player if no lastPlayedKingdom or player not found
+    return NextResponse.json(user.players[0]);
   } catch (error) {
     console.error('Error fetching player:', error);
     return NextResponse.json(

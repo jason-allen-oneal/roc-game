@@ -1,16 +1,16 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useSession } from 'next-auth/react';
+import { useUser } from './UserContext';
 
 interface Player {
-  id: string;
+  id: number;
+  userId: number;
+  kingdomId: number;
   name: string;
   gender: string;
   avatar: string;
-  kingdomId: string;
   createdAt: Date;
-  // Add more player properties as needed
 }
 
 interface PlayerContextType {
@@ -25,13 +25,13 @@ interface PlayerContextType {
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession();
+  const { user, loading: userLoading } = useUser();
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPlayer = useCallback(async () => {
-    if (!session?.user?.email) {
+    if (!user?.email) {
       setPlayer(null);
       setLoading(false);
       return;
@@ -60,7 +60,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [session?.user?.email]);
+  }, [user?.email]);
 
   const refreshPlayer = async () => {
     await fetchPlayer();
@@ -77,17 +77,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setError(null);
   };
 
-  // Fetch player data when session changes
+  // Fetch player data when user changes
   useEffect(() => {
-    if (status === 'loading') return;
+    if (userLoading) return;
     
-    if (session?.user?.email) {
+    if (user?.email) {
       fetchPlayer();
     } else {
       setPlayer(null);
       setLoading(false);
     }
-  }, [session, status, fetchPlayer]);
+  }, [user, userLoading, fetchPlayer]);
 
   const value: PlayerContextType = {
     player,

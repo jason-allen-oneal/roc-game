@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { usePlayer } from '@/contexts/PlayerContext';
+import GameHeader from './global/GameHeader';
+import Realm from './realm/Realm';
+import Field from './field/Field';
+import City from './city/City';
+import { redirect } from 'next/navigation';
 
 type View = 'city' | 'field' | 'map';
 
@@ -37,98 +42,74 @@ export default function GameScreen() {
   }
 
   if (!player) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">No player data found</p>
-          <a 
-            href="/create-player"
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Create Player
-          </a>
-        </div>
-      </div>
-    );
+    redirect('/create-player');
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="h-screen bg-gray-100 flex flex-col">
       {/* Navigation Bar */}
-      <nav className="bg-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <span className="text-xl font-bold text-gray-800">
-                  {player.name}&apos;s Kingdom
-                </span>
+      <GameHeader currentView={currentView} setCurrentView={setCurrentView} />
+
+      {/* Main Content Area - 2 Column Layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Game View Column */}
+        <div className="flex-1 overflow-hidden">
+          {currentView === 'city' && (
+            <City/>
+          )}
+
+          {currentView === 'field' && (
+            <Field/>
+          )}
+
+          {currentView === 'map' && (
+            <Realm/>
+          )}
+        </div>
+
+        {/* Chat Column */}
+        <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+          {/* Chat Header */}
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Chat</h3>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-3">
+              <div className="bg-blue-100 rounded-lg p-3">
+                <p className="text-sm text-gray-800">
+                  <span className="font-semibold text-blue-600">System:</span> Welcome to Realms of Camelot!
+                </p>
+              </div>
+              <div className="bg-gray-100 rounded-lg p-3">
+                <p className="text-sm text-gray-800">
+                  <span className="font-semibold text-green-600">Player123:</span> Anyone want to trade resources?
+                </p>
+              </div>
+              <div className="bg-gray-100 rounded-lg p-3">
+                <p className="text-sm text-gray-800">
+                  <span className="font-semibold text-purple-600">LordKnight:</span> I need wood for my castle expansion
+                </p>
               </div>
             </div>
-            
-            {/* View Navigation */}
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setCurrentView('city')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentView === 'city'
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                City
-              </button>
-              <button
-                onClick={() => setCurrentView('field')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentView === 'field'
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                Field
-              </button>
-              <button
-                onClick={() => setCurrentView('map')}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  currentView === 'map'
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                Kingdom Map
+          </div>
+
+          {/* Chat Input */}
+          <div className="border-t border-gray-200 p-4">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Type your message..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                Send
               </button>
             </div>
           </div>
         </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {currentView === 'city' && (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Your City</h2>
-            {/* City view content will go here */}
-            <p className="text-gray-600">City view coming soon...</p>
-          </div>
-        )}
-
-        {currentView === 'field' && (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Field View</h2>
-            {/* Field view content will go here */}
-            <p className="text-gray-600">Field view coming soon...</p>
-          </div>
-        )}
-
-        {currentView === 'map' && (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Kingdom Map</h2>
-            {/* Map view content will go here */}
-            <p className="text-gray-600">Map view coming soon...</p>
-          </div>
-        )}
-      </main>
+      </div>
     </div>
   );
 } 

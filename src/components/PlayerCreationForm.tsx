@@ -115,7 +115,6 @@ export default function PlayerCreationForm() {
                   height={64}
                   className="w-full h-auto"
                 />
-                <p className="text-center mt-2 text-sm capitalize">{avatar.gender}</p>
               </button>
             ))}
           </div>

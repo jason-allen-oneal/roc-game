@@ -1,18 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { PlayerProvider } from "@/contexts/PlayerContext";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { UserProvider } from "@/contexts/UserContext";
+import { CityProvider } from "@/contexts/CityContext";
 
 export const metadata: Metadata = {
   title: "Realms of Camelot",
@@ -27,12 +18,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`antialiased`}
       >
         <AuthProvider>
-          <PlayerProvider>
-            {children}
-          </PlayerProvider>
+          <UserProvider>
+            <PlayerProvider>
+              <CityProvider>
+                {children}
+              </CityProvider>
+            </PlayerProvider>
+          </UserProvider>
         </AuthProvider>
       </body>
     </html>
