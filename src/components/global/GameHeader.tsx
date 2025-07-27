@@ -16,7 +16,7 @@ export default function GameHeader({ currentView, setCurrentView }: GameHeaderPr
     }
 
     return (
-        <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white">
+        <div className="bg-forest-gradient text-gold-light border-b border-gold">
             {/* Main Header */}
             <div className="px-4 py-3">
                 <div className="flex justify-between items-start">
@@ -24,30 +24,30 @@ export default function GameHeader({ currentView, setCurrentView }: GameHeaderPr
                     <div className="flex space-x-2">
                         <button
                             onClick={() => setCurrentView('city')}
-                            className={`px-3 py-1 rounded text-sm font-medium ${
+                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                                 currentView === 'city'
-                                    ? 'bg-yellow-500 text-blue-900'
-                                    : 'bg-blue-700 text-white hover:bg-blue-600'
+                                    ? 'bg-gold-gradient text-forest-dark font-semibold shadow-lg'
+                                    : 'bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest'
                             }`}
                         >
                             City
                         </button>
                         <button
                             onClick={() => setCurrentView('field')}
-                            className={`px-3 py-1 rounded text-sm font-medium ${
+                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                                 currentView === 'field'
-                                    ? 'bg-yellow-500 text-blue-900'
-                                    : 'bg-blue-700 text-white hover:bg-blue-600'
+                                    ? 'bg-gold-gradient text-forest-dark font-semibold shadow-lg'
+                                    : 'bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest'
                             }`}
                         >
                             Field
                         </button>
                         <button
                             onClick={() => setCurrentView('map')}
-                            className={`px-3 py-1 rounded text-sm font-medium ${
+                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                                 currentView === 'map'
-                                    ? 'bg-yellow-500 text-blue-900'
-                                    : 'bg-blue-700 text-white hover:bg-blue-600'
+                                    ? 'bg-gold-gradient text-forest-dark font-semibold shadow-lg'
+                                    : 'bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest'
                             }`}
                         >
                             Kingdom
@@ -56,23 +56,23 @@ export default function GameHeader({ currentView, setCurrentView }: GameHeaderPr
 
                     {/* Center - Logo and Action Buttons */}
                     <div className="flex flex-col items-center space-y-2">
-                        <h1 className="text-2xl font-bold text-yellow-400">Realms of Camelot</h1>
+                        <h1 className="text-2xl font-bold text-gold-light drop-shadow-lg">Realms of Camelot</h1>
                         <div className="flex space-x-2">
-                            <button className="px-3 py-1 rounded text-sm font-medium bg-blue-700 text-white hover:bg-blue-600">
+                            <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
                                 Alliance
                             </button>
-                            <button className="px-3 py-1 rounded text-sm font-medium bg-blue-700 text-white hover:bg-blue-600">
+                            <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
                                 Inventory
                             </button>
-                            <button className="px-3 py-1 rounded text-sm font-medium bg-blue-700 text-white hover:bg-blue-600">
+                            <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
                                 Messages
                             </button>
-                            <button className="px-3 py-1 rounded text-sm font-medium bg-blue-700 text-white hover:bg-blue-600">
+                            <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
                                 Shop
                             </button>
                         </div>
                         {/* Resource Icons and Counts */}
-                        <div className="flex space-x-4 bg-black bg-opacity-30 px-4 py-2 rounded">
+                        <div className="flex space-x-4 bg-earth-dark bg-opacity-80 px-4 py-2 rounded border border-gold">
                             <div className="flex items-center space-x-1">
                                 <Image 
                                     src="/resources/food.png" 
@@ -81,8 +81,8 @@ export default function GameHeader({ currentView, setCurrentView }: GameHeaderPr
                                     height={16}
                                     className="w-4 h-4"
                                 />
-                                <span className="text-white font-bold">{currentCity?.resources?.food?.toLocaleString() || '0'}</span>
-                                <span className="text-gray-300 text-xs">Food</span>
+                                <span className="text-gold font-bold">{currentCity?.resources?.food?.toLocaleString() || '0'}</span>
+                                <span className="text-gold-light text-xs">Food</span>
                             </div>
                             <div className="flex items-center space-x-1">
                                 <Image 
@@ -92,8 +92,8 @@ export default function GameHeader({ currentView, setCurrentView }: GameHeaderPr
                                     height={16}
                                     className="w-4 h-4"
                                 />
-                                <span className="text-white font-bold">{currentCity?.resources?.wood?.toLocaleString() || '0'}</span>
-                                <span className="text-gray-300 text-xs">Wood</span>
+                                <span className="text-gold font-bold">{currentCity?.resources?.wood?.toLocaleString() || '0'}</span>
+                                <span className="text-gold-light text-xs">Wood</span>
                             </div>
                             <div className="flex items-center space-x-1">
                                 <Image 
@@ -103,19 +103,8 @@ export default function GameHeader({ currentView, setCurrentView }: GameHeaderPr
                                     height={16}
                                     className="w-4 h-4"
                                 />
-                                <span className="text-white font-bold">{currentCity?.resources?.stone?.toLocaleString() || '0'}</span>
-                                <span className="text-gray-300 text-xs">Stone</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                                <Image 
-                                    src="/resources/ore.png" 
-                                    alt="Ore" 
-                                    width={16} 
-                                    height={16}
-                                    className="w-4 h-4"
-                                />
-                                <span className="text-white font-bold">{currentCity?.resources?.ore?.toLocaleString() || '0'}</span>
-                                <span className="text-gray-300 text-xs">Ore</span>
+                                <span className="text-gold font-bold">{currentCity?.resources?.stone?.toLocaleString() || '0'}</span>
+                                <span className="text-gold-light text-xs">Stone</span>
                             </div>
                             <div className="flex items-center space-x-1">
                                 <Image 
@@ -125,25 +114,36 @@ export default function GameHeader({ currentView, setCurrentView }: GameHeaderPr
                                     height={16}
                                     className="w-4 h-4"
                                 />
-                                <span className="text-white font-bold">{currentCity?.resources?.gold?.toLocaleString() || '0'}</span>
-                                <span className="text-gray-300 text-xs">Gold</span>
+                                <span className="text-gold font-bold">{currentCity?.resources?.gold?.toLocaleString() || '0'}</span>
+                                <span className="text-gold-light text-xs">Gold</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                                <Image 
+                                    src="/resources/ore.png" 
+                                    alt="Ore" 
+                                    width={16} 
+                                    height={16}
+                                    className="w-4 h-4"
+                                />
+                                <span className="text-gold font-bold">{currentCity?.resources?.ore?.toLocaleString() || '0'}</span>
+                                <span className="text-gold-light text-xs">Ore</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Side - Player Avatar */}
-                    <div className="flex items-center space-x-3 bg-black bg-opacity-30 px-4 py-2 rounded">
+                    {/* Right Side - Player Info */}
+                    <div className="flex items-center space-x-3">
                         <div className="text-right">
-                            <div className="font-bold">{player.name}</div>
-                            <div className="text-sm text-gray-300">Level 1</div>
+                            <p className="text-gold-light font-semibold">{player.name}</p>
+                            <p className="text-gold-light text-sm">Level 1</p>
                         </div>
-                        <div className="w-16 h-16 bg-gray-600 rounded-full overflow-hidden flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gold">
                             <Image 
                                 src={player.avatar} 
                                 alt={player.name} 
-                                width={64} 
-                                height={64}
-                                className="object-cover w-full h-full"
+                                width={40} 
+                                height={40}
+                                className="w-full h-full object-cover"
                             />
                         </div>
                     </div>

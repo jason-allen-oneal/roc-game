@@ -2,12 +2,15 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import logger from '@/lib/logger';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  logger.apiRequest('GET', `/api/player/[id]/cities`, { playerId: id });
+  
   try {
     const session = await getServerSession(authOptions);
     
@@ -21,6 +24,8 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid player ID' }, { status: 400 });
     }
 
+    logger.debug('Cities API - looking for player', { playerId, userId: session.user.id });
+
     // Verify the player belongs to the authenticated user
     const player = await prisma.player.findFirst({
       where: {
@@ -28,6 +33,8 @@ export async function GET(
         userId: session.user.id
       }
     });
+
+    logger.debug('Cities API - player lookup result', { playerFound: !!player, playerId });
 
     if (!player) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
@@ -43,9 +50,11 @@ export async function GET(
       }
     });
 
+    logger.info('Cities API - cities found', { playerId, cityCount: cities.length });
+
     return NextResponse.json(cities);
   } catch (error) {
-    console.error('Error fetching cities:', error);
+    logger.error('Cities API - error fetching cities', { playerId: id, error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,145 +1,109 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { usePlayer } from './PlayerContext';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import logger from '@/lib/logger';
 
 interface City {
   id: number;
   name: string;
-  playerId: number;
-  mapTileId: number;
+  age: number;
   population: number;
   resources: {
     food: number;
     wood: number;
     stone: number;
-    gold: number;
     ore: number;
+    gold: number;
   };
-  buildings: {
-    townHall: number;
-    houses: number;
-    farms: number;
-    [key: string]: number;
-  };
-  createdAt: Date;
+  playerId: number;
+  mapTileId: number;
+  createdAt: string;
+}
+
+interface Building {
+  id: number;
+  name: string;
+  slug: string;
+  fieldType: number;
+  description: string;
+  costs: Record<string, number>;
+  requirements: Record<string, unknown>;
+  power: number;
+  baseValue: number;
+  bonusValue: number;
+}
+
+interface PlayerBuilding {
+  id: number;
+  playerId: number;
+  buildingId: number;
+  cityId: number;
+  plotId: string;
+  level: number;
+  isConstructing: boolean;
+  constructionStartedAt: string | null;
+  constructionEndsAt: string | null;
+  building: Building;
 }
 
 interface CityContextType {
-  cities: City[];
   currentCity: City | null;
-  loading: boolean;
-  error: string | null;
-  setCurrentCity: (city: City) => void;
-  refreshCities: () => Promise<void>;
-  updateCityResources: (cityId: number, resources: Partial<City['resources']>) => Promise<void>;
-  updateCityBuildings: (cityId: number, buildings: Partial<City['buildings']>) => Promise<void>;
+  currentCityBuildings: PlayerBuilding[];
+  refreshCityData: (cityId: number) => Promise<void>;
+  setCurrentCity: (city: City | null) => void;
 }
 
 const CityContext = createContext<CityContextType | undefined>(undefined);
 
-export function CityProvider({ children }: { children: ReactNode }) {
-  const { player } = usePlayer();
-  const [cities, setCities] = useState<City[]>([]);
+export function CityProvider({ children }: { children: React.ReactNode }) {
   const [currentCity, setCurrentCity] = useState<City | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [currentCityBuildings, setCurrentCityBuildings] = useState<PlayerBuilding[]>([]);
 
-  const fetchCities = useCallback(async () => {
-    if (!player?.id) {
-      setCities([]);
-      setCurrentCity(null);
-      setLoading(false);
-      return;
-    }
-
+  const refreshCityData = useCallback(async (cityId: number) => {
     try {
-      setLoading(true);
-      setError(null);
+      logger.debug('CityContext - refreshing city data', { cityId });
       
-      const response = await fetch(`/api/player/${player.id}/cities`);
-      
+      const response = await fetch(`/api/city/${cityId}/data`);
       if (!response.ok) {
-        throw new Error('Failed to fetch cities');
+        throw new Error(`Failed to fetch city data: ${response.statusText}`);
       }
       
-      const citiesData = await response.json();
-      setCities(citiesData);
+      const data = await response.json();
       
-      // Set the first city as current if no current city is set
-      if (citiesData.length > 0 && !currentCity) {
-        setCurrentCity(citiesData[0]);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      setCities([]);
-      setCurrentCity(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [player?.id, currentCity]);
-
-  const refreshCities = async () => {
-    await fetchCities();
-  };
-
-  const updateCityResources = async (cityId: number, resources: Partial<City['resources']>) => {
-    try {
-      const response = await fetch(`/api/city/${cityId}/resources`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(resources),
+      logger.debug('CityContext - city data received', { 
+        cityId,
+        cityName: data.city?.name,
+        buildingCount: data.buildings?.length || 0
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update city resources');
-      }
-
-      // Refresh cities to get updated data
-      await refreshCities();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update resources');
-    }
-  };
-
-  const updateCityBuildings = async (cityId: number, buildings: Partial<City['buildings']>) => {
-    try {
-      const response = await fetch(`/api/city/${cityId}/buildings`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(buildings),
+      
+      setCurrentCity(data.city);
+      setCurrentCityBuildings(data.buildings || []);
+      
+    } catch (error) {
+      logger.error('CityContext - error refreshing city data', { 
+        cityId, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update city buildings');
-      }
-
-      // Refresh cities to get updated data
-      await refreshCities();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update buildings');
     }
-  };
+  }, []);
 
-  // Fetch cities when player changes
+  // Poll for city data every 3 seconds when there's a current city
   useEffect(() => {
-    fetchCities();
-  }, [fetchCities]);
+    if (!currentCity) return;
 
-  const value: CityContextType = {
-    cities,
+    const interval = setInterval(() => {
+      refreshCityData(currentCity.id);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [currentCity, refreshCityData]);
+
+  const value = useMemo(() => ({
     currentCity,
-    loading,
-    error,
-    setCurrentCity,
-    refreshCities,
-    updateCityResources,
-    updateCityBuildings,
-  };
+    currentCityBuildings,
+    refreshCityData,
+    setCurrentCity
+  }), [currentCity, currentCityBuildings, refreshCityData]);
 
   return (
     <CityContext.Provider value={value}>

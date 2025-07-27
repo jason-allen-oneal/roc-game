@@ -173,7 +173,8 @@ const buildingData = [
     slug: 'arena',
     power: 500,
     baseValue: 0,
-    bonusValue: 10
+    bonusValue: 10,
+    constructionTime: 120 // 2 minutes
   },
   {
     id: 2,
@@ -185,7 +186,8 @@ const buildingData = [
     slug: 'barracks',
     power: 100,
     baseValue: 1,
-    bonusValue: 10
+    bonusValue: 10,
+    constructionTime: 90 // 1.5 minutes
   },
   {
     id: 3,
@@ -197,7 +199,8 @@ const buildingData = [
     slug: 'academy',
     power: 600,
     baseValue: 0,
-    bonusValue: 0
+    bonusValue: 0,
+    constructionTime: 300 // 5 minutes
   },
   {
     id: 4,
@@ -209,7 +212,8 @@ const buildingData = [
     slug: 'cathedral',
     power: 800,
     baseValue: 1,
-    bonusValue: 0
+    bonusValue: 0,
+    constructionTime: 240 // 4 minutes
   },
   {
     id: 5,
@@ -221,7 +225,8 @@ const buildingData = [
     slug: 'towncenter',
     power: 100,
     baseValue: 0,
-    bonusValue: 0
+    bonusValue: 0,
+    constructionTime: 600 // 10 minutes
   },
   {
     id: 6,
@@ -233,7 +238,8 @@ const buildingData = [
     slug: 'house',
     power: 50,
     baseValue: 1,
-    bonusValue: 5
+    bonusValue: 5,
+    constructionTime: 60 // 1 minute
   },
   {
     id: 7,
@@ -245,7 +251,8 @@ const buildingData = [
     slug: 'smith',
     power: 200,
     baseValue: 1,
-    bonusValue: 5
+    bonusValue: 5,
+    constructionTime: 180 // 3 minutes
   },
   {
     id: 8,
@@ -257,7 +264,8 @@ const buildingData = [
     slug: 'archery',
     power: 100,
     baseValue: 1,
-    bonusValue: 10
+    bonusValue: 10,
+    constructionTime: 90 // 1.5 minutes
   },
   {
     id: 9,
@@ -269,7 +277,8 @@ const buildingData = [
     slug: 'market',
     power: 100,
     baseValue: 40,
-    bonusValue: 5
+    bonusValue: 5,
+    constructionTime: 120 // 2 minutes
   },
   {
     id: 10,
@@ -281,7 +290,8 @@ const buildingData = [
     slug: 'stable',
     power: 100,
     baseValue: 1,
-    bonusValue: 10
+    bonusValue: 10,
+    constructionTime: 90 // 1.5 minutes
   },
   {
     id: 11,
@@ -293,7 +303,8 @@ const buildingData = [
     slug: 'tower',
     power: 400,
     baseValue: 0,
-    bonusValue: 0
+    bonusValue: 0,
+    constructionTime: 150 // 2.5 minutes
   },
   {
     id: 12,
@@ -305,7 +316,8 @@ const buildingData = [
     slug: 'storage',
     power: 200,
     baseValue: 0,
-    bonusValue: 0
+    bonusValue: 0,
+    constructionTime: 90 // 1.5 minutes
   },
   {
     id: 13,
@@ -317,7 +329,8 @@ const buildingData = [
     slug: 'wall',
     power: 800,
     baseValue: 0,
-    bonusValue: 0
+    bonusValue: 0,
+    constructionTime: 300 // 5 minutes
   },
   {
     id: 14,
@@ -329,7 +342,8 @@ const buildingData = [
     slug: 'farm',
     power: 100,
     baseValue: 100,
-    bonusValue: 5
+    bonusValue: 5,
+    constructionTime: 60 // 1 minute
   },
   {
     id: 15,
@@ -341,7 +355,8 @@ const buildingData = [
     slug: 'lumber',
     power: 100,
     baseValue: 100,
-    bonusValue: 5
+    bonusValue: 5,
+    constructionTime: 60 // 1 minute
   },
   {
     id: 16,
@@ -353,7 +368,8 @@ const buildingData = [
     slug: 'mine',
     power: 100,
     baseValue: 100,
-    bonusValue: 5
+    bonusValue: 5,
+    constructionTime: 60 // 1 minute
   },
   {
     id: 17,
@@ -365,7 +381,8 @@ const buildingData = [
     slug: 'shrine',
     power: 300,
     baseValue: 0,
-    bonusValue: 20
+    bonusValue: 20,
+    constructionTime: 180 // 3 minutes
   }
 ]
 
@@ -508,6 +525,10 @@ async function main() {
   try {
     // Clear existing data
     console.log('🗑️  Clearing existing data...')
+    await prisma.chatMessage.deleteMany()
+    await prisma.chatRoom.deleteMany()
+    await prisma.allianceMember.deleteMany()
+    await prisma.alliance.deleteMany()
     await prisma.playerResearch.deleteMany()
     await prisma.playerBuilding.deleteMany()
     await prisma.city.deleteMany()
@@ -573,7 +594,8 @@ async function main() {
           slug: building.slug,
           power: building.power,
           baseValue: building.baseValue,
-          bonusValue: building.bonusValue
+          bonusValue: building.bonusValue,
+          constructionTime: building.constructionTime
         }
       })
     }
@@ -596,6 +618,186 @@ async function main() {
       
       console.log(`✅ Created ${tiles.length} tiles for ${kingdom.name}`)
     }
+    
+    // Create default testing player "chaos"
+    console.log('👤 Creating default testing player...')
+    const chaosUser = await prisma.user.upsert({
+      where: { email: 'jason.allen.oneal@gmail.com' },
+      update: {}, // Don't update anything if user exists
+      create: {
+        email: 'jason.allen.oneal@gmail.com',
+        password: hashedPassword as unknown as string
+      }
+    })
+    
+    const chaosPlayer = await prisma.player.upsert({
+      where: { 
+        userId_kingdomId: {
+          userId: chaosUser.id,
+          kingdomId: kingdoms[0].id
+        }
+      },
+      update: {}, // Don't update anything if player exists
+      create: {
+        name: 'chaos',
+        gender: 'male',
+        avatar: '/avatars/male/4.webp',
+        userId: chaosUser.id,
+        kingdomId: kingdoms[0].id
+      }
+    })
+    
+    // Create city for chaos player
+    // Find an available map tile for the city
+    const availableTile = await prisma.mapTile.findFirst({
+      where: {
+        kingdomId: kingdoms[0].id,
+        city: null // No city currently owns this tile
+      }
+    });
+    
+    if (!availableTile) {
+      throw new Error('No available map tiles for city creation');
+    }
+    
+    const chaosCity = await prisma.city.upsert({
+      where: { mapTileId: availableTile.id },
+      update: {}, // Don't update anything if city exists
+      create: {
+        name: 'Chaos City',
+        playerId: chaosPlayer.id,
+        mapTileId: availableTile.id,
+        population: 100,
+        resources: {
+          food: 1000,
+          wood: 1000,
+          stone: 1000,
+          gold: 500,
+          ore: 500
+        }
+      }
+    })
+    
+    // Create starting Town Center building for chaos player
+    await prisma.playerBuilding.upsert({
+      where: {
+        cityId_plotId: {
+          cityId: chaosCity.id,
+          plotId: 'plot27'
+        }
+      },
+      update: {}, // Don't update anything if building exists
+      create: {
+        playerId: chaosPlayer.id,
+        buildingId: 5, // Town Center building ID
+        cityId: chaosCity.id,
+        plotId: 'plot27', // Town Center always goes on plot 27
+        level: 1,
+        isConstructing: false,
+        constructionStartedAt: null,
+        constructionEndsAt: null
+      }
+    })
+    
+    console.log('✅ Created default testing player "chaos" with city and Town Center')
+    
+    // Create chat rooms
+    console.log('💬 Creating chat rooms...')
+    await prisma.chatRoom.upsert({
+      where: { name: 'global' },
+      update: {},
+      create: {
+        name: 'global',
+        type: 'GLOBAL'
+      }
+    })
+    
+    await prisma.chatRoom.upsert({
+      where: { name: 'alliance' },
+      update: {},
+      create: {
+        name: 'alliance',
+        type: 'ALLIANCE',
+        kingdomId: kingdoms[0].id
+      }
+    })
+    
+    console.log('✅ Created chat rooms (global and alliance)')
+    
+    // Add some initial chat messages
+    console.log('💬 Adding initial chat messages...')
+    const globalRoom = await prisma.chatRoom.findUnique({ where: { name: 'global' } });
+    const allianceRoom = await prisma.chatRoom.findUnique({ where: { name: 'alliance' } });
+    
+    if (globalRoom) {
+      await prisma.chatMessage.create({
+        data: {
+          roomId: globalRoom.id,
+          playerId: chaosPlayer.id,
+          content: 'Welcome to Realms of Camelot! This is the global chat where all players can communicate.',
+          messageType: 'SYSTEM'
+        }
+      });
+      
+      await prisma.chatMessage.create({
+        data: {
+          roomId: globalRoom.id,
+          playerId: chaosPlayer.id,
+          content: 'Hello everyone! I\'m chaos, and I\'m ready to build my kingdom!',
+          messageType: 'TEXT'
+        }
+      });
+    }
+    
+    if (allianceRoom) {
+      await prisma.chatMessage.create({
+        data: {
+          roomId: allianceRoom.id,
+          playerId: chaosPlayer.id,
+          content: 'Welcome to the alliance chat! Coordinate with your kingdom members here.',
+          messageType: 'SYSTEM'
+        }
+      });
+    }
+    
+    console.log('✅ Added initial chat messages')
+    
+    // Create a test alliance and add chaos player to it
+    console.log('🤝 Creating test alliance...')
+    const testAlliance = await prisma.alliance.upsert({
+      where: { name: 'Test Alliance' },
+      update: {},
+      create: {
+        name: 'Test Alliance',
+        description: 'A test alliance for development',
+        kingdomId: kingdoms[0].id,
+        leaderId: chaosPlayer.id
+      }
+    });
+    
+    // Add chaos player to the alliance
+    await prisma.allianceMember.upsert({
+      where: { playerId: chaosPlayer.id },
+      update: {},
+      create: {
+        allianceId: testAlliance.id,
+        playerId: chaosPlayer.id,
+        role: 'LEADER'
+      }
+    });
+    
+    // Create alliance chat room
+    await prisma.chatRoom.upsert({
+      where: { name: 'alliance' },
+      update: {},
+      create: {
+        name: 'alliance',
+        type: 'ALLIANCE',
+        allianceId: testAlliance.id
+      }
+    });
+    
+    console.log('✅ Created test alliance and added chaos player')
     
     console.log('🎉 Database seeding completed successfully!')
     

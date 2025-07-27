@@ -23,6 +23,36 @@ model Kingdom {
   maxPlayers  Int       @default(50)
   createdAt   DateTime  @default(now())
   players     Player[]
+  chatRooms   ChatRoom[]
+  alliances   Alliance[]
+}
+
+model Alliance {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?  @db.Text
+  kingdomId   Int      // Alliance belongs to a specific kingdom
+  leaderId    Int      // Player ID of alliance leader
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  kingdom     Kingdom  @relation(fields: [kingdomId], references: [id])
+  members     AllianceMember[]
+  ledAlliances Player[] @relation("AllianceLeader")
+  chatRooms   ChatRoom[]
+}
+
+model AllianceMember {
+  id          Int      @id @default(autoincrement())
+  allianceId  Int
+  playerId    Int      @unique  // A player can only be in one alliance
+  role        AllianceRole @default(MEMBER)
+  joinedAt    DateTime @default(now()) @map("joined_at")
+  
+  // Relations
+  alliance    Alliance @relation(fields: [allianceId], references: [id])
+  player      Player   @relation(fields: [playerId], references: [id])
 }
 
 model Player {
@@ -37,6 +67,9 @@ model Player {
   cities      City[]
   playerBuildings PlayerBuilding[]
   playerResearch PlayerResearch[]
+  chatMessages ChatMessage[]
+  allianceMembership AllianceMember?
+  ledAlliances Alliance[] @relation("AllianceLeader")
   kingdom     Kingdom   @relation(fields: [kingdomId], references: [id])
   user        User      @relation("UserPlayers", fields: [userId], references: [id])
 
@@ -113,6 +146,7 @@ model Building {
   power       Int      @default(0)
   baseValue   Int      @default(0) @map("base_value")
   bonusValue  Int      @default(0) @map("bonus_value")
+  constructionTime Int @default(60) @map("construction_time") // Base construction time in seconds
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -125,6 +159,7 @@ model PlayerBuilding {
   playerId    Int
   buildingId  Int
   cityId      Int
+  plotId      String   @map("plot_id")
   level       Int      @default(1)
   isConstructing Boolean @default(false) @map("is_constructing")
   constructionStartedAt DateTime? @map("construction_started_at")
@@ -137,7 +172,7 @@ model PlayerBuilding {
   building    Building  @relation(fields: [buildingId], references: [id])
   city        City      @relation(fields: [cityId], references: [id])
 
-  @@unique([playerId, buildingId, cityId])
+  @@unique([cityId, plotId])
 }
 
 model PlayerResearch {
@@ -157,4 +192,56 @@ model PlayerResearch {
   city        City      @relation(fields: [cityId], references: [id])
 
   @@unique([playerId, researchId, cityId])
+}
+
+// Chat models
+model ChatRoom {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  type        ChatRoomType
+  kingdomId   Int?
+  allianceId  Int?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  kingdom     Kingdom?   @relation(fields: [kingdomId], references: [id])
+  alliance    Alliance?  @relation(fields: [allianceId], references: [id])
+  messages    ChatMessage[]
+}
+
+model ChatMessage {
+  id          Int      @id @default(autoincrement())
+  roomId      Int
+  playerId    Int
+  content     String   @db.Text
+  messageType MessageType @default(TEXT) @map("message_type")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  room        ChatRoom  @relation(fields: [roomId], references: [id])
+  player      Player    @relation(fields: [playerId], references: [id])
+
+  @@index([roomId, createdAt])
+}
+
+// Enums
+enum ChatRoomType {
+  GLOBAL
+  ALLIANCE
+  KINGDOM
+  PRIVATE
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM
+  TRADE
+  ALLIANCE
+}
+
+enum AllianceRole {
+  LEADER
+  OFFICER
+  MEMBER
 }

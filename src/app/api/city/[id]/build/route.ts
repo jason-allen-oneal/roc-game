@@ -1,95 +1,128 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import logger from '@/lib/logger';
+
+interface BuildRequest {
+  buildingSlug: string;
+  plotId: string;
+}
+
+interface Building {
+  id: number;
+  name: string;
+  slug: string;
+  constructionTime: number;
+  costs: Record<string, number>;
+  requirements: Record<string, unknown>;
+}
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
     const cityId = parseInt(id);
-    
+
     if (isNaN(cityId)) {
       return NextResponse.json({ error: 'Invalid city ID' }, { status: 400 });
     }
 
-    const { buildingSlug, plotId } = await request.json();
+    const body: BuildRequest = await request.json();
+    const { buildingSlug, plotId } = body;
 
     if (!buildingSlug || !plotId) {
       return NextResponse.json({ error: 'Missing buildingSlug or plotId' }, { status: 400 });
     }
 
-    // Get the building details
-    const building = await prisma.building.findUnique({
-      where: { slug: buildingSlug }
+    logger.info('City build - starting construction', { 
+      cityId, 
+      buildingSlug, 
+      plotId,
+      userId: session.user.id 
     });
+
+    // Get the building data
+    const building = await prisma.building.findFirst({
+      where: { slug: buildingSlug }
+    }) as Building | null;
 
     if (!building) {
       return NextResponse.json({ error: 'Building not found' }, { status: 404 });
     }
 
-    // Get the city and check if player owns it
-    const city = await prisma.city.findUnique({
-      where: { id: cityId },
-      include: { player: true }
+    // Get the city and verify ownership
+    const city = await prisma.city.findFirst({
+      where: {
+        id: cityId,
+        player: {
+          userId: session.user.id
+        }
+      },
+      include: {
+        player: true
+      }
     });
 
     if (!city) {
-      return NextResponse.json({ error: 'City not found' }, { status: 404 });
+      return NextResponse.json({ error: 'City not found or access denied' }, { status: 404 });
     }
 
-    // Check if user owns this city
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+    // Check if there's already a building under construction in this city
+    const existingConstruction = await prisma.playerBuilding.findFirst({
+      where: {
+        cityId: cityId,
+        isConstructing: true
+      },
+      include: {
+        building: true
+      }
     });
 
-    if (!user || city.player.userId !== user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (existingConstruction) {
+      return NextResponse.json({ 
+        error: `Cannot start construction: ${existingConstruction.building?.name || 'Another building'} is already under construction` 
+      }, { status: 400 });
     }
 
-    // Check if player has enough resources
-    const cityResources = city.resources as any;
-    const buildingCosts = building.costs as any;
+    // Check if this plot already has a building
+    const existingBuilding = await prisma.playerBuilding.findFirst({
+      where: {
+        cityId: cityId,
+        plotId: plotId
+      }
+    });
 
-    // Check each required resource
-    for (const [resource, cost] of Object.entries(buildingCosts)) {
-      const resourceKey = resource === 'f' ? 'food' : 
-                         resource === 'w' ? 'wood' : 
-                         resource === 's' ? 'stone' : 
-                         resource === 'o' ? 'ore' : 
-                         resource === 'g' ? 'gold' : resource;
-      
-      if (cityResources[resourceKey] < (cost as number)) {
-        return NextResponse.json({ 
-          error: `Insufficient ${resourceKey}. Required: ${cost}, Available: ${cityResources[resourceKey]}` 
-        }, { status: 400 });
+    if (existingBuilding) {
+      return NextResponse.json({ error: 'Plot already has a building' }, { status: 400 });
+    }
+
+    // Soft unique check for specific building types
+    if (['towncenter', 'smith', 'academy', 'market'].includes(buildingSlug)) {
+      const existingBuildingOfType = await prisma.playerBuilding.findFirst({
+        where: {
+          cityId: cityId,
+          building: {
+            slug: buildingSlug
+          }
+        }
+      });
+
+      if (existingBuildingOfType) {
+        return NextResponse.json({ error: `Cannot build ${building.name}: Only one allowed per city` }, { status: 400 });
       }
     }
 
-    // Deduct resources
-    const updatedResources = { ...cityResources };
-    for (const [resource, cost] of Object.entries(buildingCosts)) {
-      const resourceKey = resource === 'f' ? 'food' : 
-                         resource === 'w' ? 'wood' : 
-                         resource === 's' ? 'stone' : 
-                         resource === 'o' ? 'ore' : 
-                         resource === 'g' ? 'gold' : resource;
-      updatedResources[resourceKey] -= (cost as number);
-    }
-
-    // Update city resources
-    await prisma.city.update({
-      where: { id: cityId },
-      data: { resources: updatedResources }
-    });
+    // Calculate construction times
+    const constructionStartedAt = new Date();
+    const constructionEndsAt = new Date(constructionStartedAt.getTime() + (building.constructionTime * 1000));
 
     // Create the player building
     const playerBuilding = await prisma.playerBuilding.create({
@@ -97,27 +130,39 @@ export async function POST(
         playerId: city.playerId,
         buildingId: building.id,
         cityId: cityId,
+        plotId: plotId,
         level: 1,
         isConstructing: true,
-        constructionStartedAt: new Date(),
-        constructionEndsAt: new Date(Date.now() + 60000) // 1 minute construction time for testing
+        constructionStartedAt: constructionStartedAt,
+        constructionEndsAt: constructionEndsAt
       },
       include: {
         building: true
       }
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      playerBuilding,
-      updatedResources 
+    logger.info('City build - construction started successfully', { 
+      cityId, 
+      buildingId: building.id,
+      buildingSlug,
+      plotId,
+      constructionStartedAt,
+      constructionEndsAt,
+      userId: session.user.id 
+    });
+
+    return NextResponse.json({
+      success: true,
+      buildingId: playerBuilding.id,
+      constructionStartedAt: constructionStartedAt.toISOString(),
+      constructionEndsAt: constructionEndsAt.toISOString()
     });
 
   } catch (error) {
-    console.error('Error building construction:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger.error('City build - error starting construction', { 
+      cityId: params, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+    return NextResponse.json({ error: 'Failed to start construction' }, { status: 500 });
   }
 } 

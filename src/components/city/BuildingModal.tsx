@@ -24,6 +24,7 @@ interface Building {
   power: number;
   baseValue: number;
   bonusValue: number;
+  constructionTime: number; // Construction time in seconds
 }
 
 interface CityResources {
@@ -43,13 +44,14 @@ interface BuildingModalProps {
   cityAge: number;
   existingBuildings: { [key: string]: number }; // building slug -> level
   existingResearch: { [key: string]: number }; // research slug -> level
-  onBuildingSelect: (buildingSlug: string) => void;
+  onBuildingSelect: (building: Building) => void;
 }
 
 export default function BuildingModal({
   isOpen,
   onClose,
   plotId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   cityId,
   cityResources,
   cityAge,
@@ -137,8 +139,6 @@ export default function BuildingModal({
   };
 
   const formatCosts = (costs: Building['costs']) => {
-    if (!costs) return 'Free';
-    
     const costStrings: string[] = [];
     if (costs.f) costStrings.push(`${costs.f} Food`);
     if (costs.w) costStrings.push(`${costs.w} Wood`);
@@ -149,10 +149,19 @@ export default function BuildingModal({
     return costStrings.join(', ');
   };
 
+  const formatConstructionTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes > 0) {
+      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+    }
+    return `${remainingSeconds}s`;
+  };
+
   const handleBuildingClick = (building: Building) => {
     const { canBuild } = checkRequirements(building);
     if (canBuild) {
-      onBuildingSelect(building.slug);
+      onBuildingSelect(building);
       onClose();
     }
   };
@@ -161,72 +170,84 @@ export default function BuildingModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+      <div className="bg-earth-gradient rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border border-gold shadow-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">Build on Plot {plotId}</h2>
+          <h2 className="text-xl font-bold text-gold">Build on Plot {plotId.substring(4)}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-2xl"
+            className="text-gold-light hover:text-gold text-2xl transition-colors"
           >
             ×
           </button>
         </div>
 
         {loading ? (
-          <div className="text-white text-center py-8">Loading buildings...</div>
+          <div className="text-gold-light text-center py-8">Loading buildings...</div>
         ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {buildings
-            .filter(building => building.fieldType === 0) // Only show city buildings, not resource fields
-            .map((building) => {
-              const { canBuild, reasons } = checkRequirements(building);
-              
-              return (
-                <div
-                  key={building.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                    canBuild
-                      ? 'border-gray-600 hover:border-blue-500 bg-gray-700 hover:bg-gray-600'
-                      : 'border-gray-700 bg-gray-800 opacity-60'
-                  }`}
-                  onClick={() => handleBuildingClick(building)}
-                >
-                  <div className="flex items-center mb-2">
-                    <div className="w-12 h-12 bg-gray-600 rounded mr-3 flex items-center justify-center">
-                      <span className="text-xs text-gray-300">
-                        <Image src={`/city/${building.slug}/${cityAge}.png`} alt={building.name} width={48} height={48} />
-                      </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {buildings
+              .filter(building => building.fieldType === 0) // Only show city buildings, not resource fields
+              .filter(building => {
+                // Filter out unique buildings that already exist
+                const uniqueBuildings = ['towncenter', 'smith', 'academy', 'market'];
+                if (uniqueBuildings.includes(building.slug)) {
+                  return !existingBuildings[building.slug]; // Only show if it doesn't exist
+                }
+                return true; // Show all non-unique buildings
+              })
+              .map((building) => {
+                const { canBuild, reasons } = checkRequirements(building);
+                
+                return (
+                  <div
+                    key={building.id}
+                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                      canBuild
+                        ? 'border-forest hover:border-gold bg-forest-light hover:bg-forest-lighter'
+                        : 'border-forest bg-forest-dark opacity-60'
+                    }`}
+                    onClick={() => handleBuildingClick(building)}
+                  >
+                    <div className="flex items-center mb-2">
+                      <div className="w-12 h-12 bg-forest-dark rounded mr-3 flex items-center justify-center border border-forest">
+                        <span className="text-xs text-gold-light">
+                          <Image src={`/city/${building.slug}/${cityAge}.png`} alt={building.name} width={48} height={48} />
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-gold font-semibold">{building.name}</h3>
+                        <p className="text-gold-light text-sm">
+                          {building.fieldType === 0 ? 'Building' : 'Resource Field'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-white font-semibold">{building.name}</h3>
-                      <p className="text-gray-400 text-sm">
-                        {building.fieldType === 0 ? 'Building' : 'Resource Field'}
-                      </p>
+                    
+                    <p className="text-gold-light text-sm mb-2 line-clamp-2">
+                      {building.description}
+                    </p>
+                    
+                    <div className="text-gold text-sm mb-2">
+                      Cost: {formatCosts(building.costs)}
+                    </div>
+                    
+                    <div className="text-gold-light text-sm mb-2">
+                      Construction Time: {formatConstructionTime(building.constructionTime)}
+                    </div>
+                    
+                    {!canBuild && reasons.length > 0 && (
+                      <div className="text-red-400 text-xs">
+                        {reasons.map((reason, index) => (
+                          <div key={index}>• {reason}</div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="text-gold-light text-xs mt-2">
+                      Power: {building.power} | Base: {building.baseValue} | Bonus: {building.bonusValue}
                     </div>
                   </div>
-                  
-                  <p className="text-gray-300 text-sm mb-2 line-clamp-2">
-                    {building.description}
-                  </p>
-                  
-                  <div className="text-yellow-400 text-sm mb-2">
-                    Cost: {formatCosts(building.costs)}
-                  </div>
-                  
-                  {!canBuild && reasons.length > 0 && (
-                    <div className="text-red-400 text-xs">
-                      {reasons.map((reason, index) => (
-                        <div key={index}>• {reason}</div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="text-gray-400 text-xs mt-2">
-                    Power: {building.power} | Base: {building.baseValue} | Bonus: {building.bonusValue}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         )}
       </div>

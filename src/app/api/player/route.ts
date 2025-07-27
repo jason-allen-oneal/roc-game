@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import logger from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -11,12 +12,21 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log(session.user);
+    logger.debug('Session user data', { 
+      id: session.user.id, 
+      email: session.user.email 
+    });
+    
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id
       },
       include: { players: true }
+    });
+
+    logger.debug('Found user data', { 
+      userId: user?.id, 
+      playerCount: user?.players?.length 
     });
 
     if (!user) {
@@ -38,7 +48,7 @@ export async function GET() {
     // Fallback to the first player if no lastPlayedKingdom or player not found
     return NextResponse.json(user.players[0]);
   } catch (error) {
-    console.error('Error fetching player:', error);
+    logger.error('Error fetching player', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -74,12 +74,12 @@ export default function PlayerCreationForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center">Create Your Character</h2>
+    <div className="max-w-md mx-auto p-6 bg-earth-gradient rounded-lg shadow-xl border border-gold">
+      <h2 className="text-2xl font-bold mb-6 text-center text-gold">Create Your Character</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="name" className="block text-sm font-medium text-gold-light">
             Character Name
           </label>
           <input
@@ -87,13 +87,13 @@ export default function PlayerCreationForm() {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          className="mt-1 block w-full rounded-md bg-forest-dark border-forest text-gold-light placeholder-forest-lighter shadow-sm focus:border-gold focus:ring-gold"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gold-light mb-2">
             Choose Your Avatar
           </label>
           <div className="grid grid-cols-4 gap-4">
@@ -102,10 +102,10 @@ export default function PlayerCreationForm() {
                 key={avatar.id}
                 type="button"
                 onClick={() => setSelectedAvatar(avatar.id)}
-                className={`p-2 rounded-lg border-2 ${
+                className={`p-2 rounded-lg border-2 transition-all duration-200 ${
                   selectedAvatar === avatar.id
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 hover:border-indigo-300'
+                    ? 'border-gold bg-forest-light shadow-lg'
+                    : 'border-forest hover:border-gold bg-forest-dark hover:bg-forest-light'
                 }`}
               >
                 <Image
@@ -121,13 +121,13 @@ export default function PlayerCreationForm() {
         </div>
 
         {error && (
-          <div className="text-red-500 text-sm">{error}</div>
+          <div className="text-red-400 text-sm bg-forest-dark p-3 rounded border border-red-500">{error}</div>
         )}
 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-forest-dark bg-gold-gradient hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold disabled:opacity-50 transition-all duration-200"
         >
           {isLoading ? 'Creating...' : 'Create Character'}
         </button>

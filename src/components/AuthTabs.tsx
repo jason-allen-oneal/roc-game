@@ -14,13 +14,13 @@ export default function AuthTabs() {
       <main className="flex flex-col items-center gap-8 max-w-md w-full">
         <div className="w-full">
           {/* Tab Navigation */}
-          <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
+          <div className="flex rounded-lg bg-forest p-1 mb-6 border border-gold">
             <button
               onClick={() => setActiveTab('login')}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'login'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gold-gradient text-forest-dark shadow-sm'
+                  : 'text-gold-light hover:text-gold'
               }`}
             >
               Login
@@ -29,8 +29,8 @@ export default function AuthTabs() {
               onClick={() => setActiveTab('register')}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'register'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gold-gradient text-forest-dark shadow-sm'
+                  : 'text-gold-light hover:text-gold'
               }`}
             >
               Register
@@ -38,7 +38,7 @@ export default function AuthTabs() {
           </div>
 
           {/* Form Container */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-earth-gradient rounded-lg shadow-xl p-6 border border-gold">
             {activeTab === 'login' ? <LoginForm /> : <RegisterForm />}
           </div>
         </div>

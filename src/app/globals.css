@@ -1,10 +1,81 @@
 @import "tailwindcss";
 
+@layer base {
+  :root {
+    /* Dark Green Palette */
+    --color-forest-dark: #1a2e1a;
+    --color-forest: #2d4a2d;
+    --color-forest-light: #3d5a3d;
+    --color-forest-lighter: #4d6a4d;
+    
+    /* Brown Palette */
+    --color-earth-dark: #2d1f1a;
+    --color-earth: #4a3328;
+    --color-earth-light: #5a4338;
+    --color-earth-lighter: #6a5348;
+    
+    /* Gold Palette */
+    --color-gold-dark: #b8860b;
+    --color-gold: #daa520;
+    --color-gold-light: #f4d03f;
+    --color-gold-lighter: #f7dc6f;
+    
+    /* Accent Colors */
+    --color-accent-dark: #8b4513;
+    --color-accent: #a0522d;
+    --color-accent-light: #cd853f;
+  }
+}
+
 @layer utilities {
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  
+  /* Custom background gradients */
+  .bg-forest-gradient {
+    background: linear-gradient(135deg, var(--color-forest-dark) 0%, var(--color-forest) 100%);
+  }
+  
+  .bg-earth-gradient {
+    background: linear-gradient(135deg, var(--color-earth-dark) 0%, var(--color-earth) 100%);
+  }
+  
+  .bg-gold-gradient {
+    background: linear-gradient(135deg, var(--color-gold-dark) 0%, var(--color-gold) 100%);
+  }
+  
+  /* Custom borders */
+  .border-gold {
+    border-color: var(--color-gold);
+  }
+  
+  .border-forest {
+    border-color: var(--color-forest-light);
+  }
+  
+  /* Custom text colors */
+  .text-gold {
+    color: var(--color-gold);
+  }
+  
+  .text-gold-light {
+    color: var(--color-gold-light);
+  }
+  
+  .text-forest {
+    color: var(--color-forest-lighter);
+  }
+}
+
+@keyframes shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
   }
 }

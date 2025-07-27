@@ -115,14 +115,25 @@ export async function POST(req: Request) {
       });
 
       if (townCenterBuilding) {
+        // Check if town center already exists for this city
+        const existingTownCenter = await prisma.playerBuilding.findFirst({
+          where: {
+            cityId: city.id,
+            buildingId: townCenterBuilding.id
+          }
+        });
+
+        if (!existingTownCenter) {
         await prisma.playerBuilding.create({
           data: {
             playerId: player.id,
             buildingId: townCenterBuilding.id,
             cityId: city.id,
+              plotId: 'plot27', // Town Center always goes on plot 27
             level: 1
           }
         });
+        }
       }
 
       console.log('City created:', city.id);
@@ -150,14 +161,25 @@ export async function POST(req: Request) {
       });
 
       if (townCenterBuilding) {
+        // Check if town center already exists for this city
+        const existingTownCenter = await prisma.playerBuilding.findFirst({
+          where: {
+            cityId: city.id,
+            buildingId: townCenterBuilding.id
+          }
+        });
+
+        if (!existingTownCenter) {
         await prisma.playerBuilding.create({
           data: {
             playerId: player.id,
             buildingId: townCenterBuilding.id,
             cityId: city.id,
+              plotId: 'plot27', // Town Center always goes on plot 27
             level: 1
           }
         });
+        }
       }
 
       console.log('City created:', city.id);

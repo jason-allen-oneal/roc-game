@@ -8,7 +8,13 @@ export async function POST(req: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { message: "Missing required fields" },
+        { 
+          error: "Missing required fields",
+          details: {
+            email: !email ? "Email is required" : null,
+            password: !password ? "Password is required" : null
+          }
+        },
         { status: 400 }
       );
     }
@@ -20,7 +26,10 @@ export async function POST(req: Request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { message: "User already exists" },
+        { 
+          error: "User already exists",
+          details: "An account with this email address already exists. Please use a different email or try logging in."
+        },
         { status: 400 }
       );
     }
@@ -38,6 +47,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { 
+        success: true,
         message: "User created successfully",
         user: {
           id: user.id,
@@ -49,7 +59,10 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(
-      { message: "An error occurred. Please try again." },
+      { 
+        error: "Registration failed",
+        details: error instanceof Error ? error.message : "An unexpected error occurred during registration"
+      },
       { status: 500 }
     );
   }
