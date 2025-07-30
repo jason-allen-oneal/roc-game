@@ -41,14 +41,32 @@ export async function GET() {
     if (user.lastPlayedKingdom) {
       const lastPlayer = user.players.find(player => player.kingdomId === user.lastPlayedKingdom);
       if (lastPlayer) {
-        return NextResponse.json(lastPlayer);
+        // Fetch the player with cities
+        const playerWithCities = await prisma.player.findUnique({
+          where: { id: lastPlayer.id },
+          include: {
+            cities: {
+              orderBy: { createdAt: 'asc' }
+            }
+          }
+        });
+        return NextResponse.json(playerWithCities);
       }
     }
 
     // Fallback to the first player if no lastPlayedKingdom or player not found
-    return NextResponse.json(user.players[0]);
+    const firstPlayer = user.players[0];
+    const playerWithCities = await prisma.player.findUnique({
+      where: { id: firstPlayer.id },
+      include: {
+        cities: {
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    });
+    return NextResponse.json(playerWithCities);
   } catch (error) {
-    logger.error('Error fetching player', { error });
+    logger.error('Error fetching player', { error: String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

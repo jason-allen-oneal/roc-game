@@ -6,8 +6,8 @@ export default function Barracks({ level }: BarracksProps) {
   return (
     <div className="space-y-4">
       <div className="bg-red-50 p-4 rounded-lg">
-        <h4 className="font-semibold text-red-800 mb-2">Military Training</h4>
-        <div className="space-y-2 text-sm">
+        <h4 className="text-sm font-semibold text-red-800 mb-2">Military Training</h4>
+        <div className="space-y-2 text-xs">
           <div className="flex justify-between">
             <span>Current Level:</span>
             <span className="font-medium">{level}</span>
@@ -24,8 +24,8 @@ export default function Barracks({ level }: BarracksProps) {
       </div>
       
       <div className="bg-blue-50 p-4 rounded-lg">
-        <h4 className="font-semibold text-blue-800 mb-2">Available Units</h4>
-        <ul className="text-sm space-y-1">
+        <h4 className="text-sm font-semibold text-blue-800 mb-2">Available Units</h4>
+        <ul className="text-xs space-y-1">
           <li>• Infantry (Level 1+)</li>
           <li>• Archers (Level 3+)</li>
           <li>• Cavalry (Level 5+)</li>

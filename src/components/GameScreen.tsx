@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePlayer } from '@/contexts/PlayerContext';
 import GameHeader from './global/GameHeader';
 import Realm from './realm/Realm';
 import Field from './field/Field';
 import City from './city/City';
+import CitySelector from './city/CitySelector';
 import Chat from './Chat';
 import { redirect } from 'next/navigation';
 
@@ -14,6 +15,41 @@ type View = 'city' | 'field' | 'map';
 export default function GameScreen() {
   const { player, loading, error } = usePlayer();
   const [currentView, setCurrentView] = useState<View>('city');
+
+  const handleCitySelect = async (cityId: number) => {
+    try {
+      // Update the player's lastCity in the database
+      const response = await fetch(`/api/player/${player?.id}/cities`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lastCity: cityId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to switch city');
+      }
+
+      // Refresh the page to load the new city data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error switching city:', error);
+    }
+  };
+
+  // Listen for city view switch event from field
+  useEffect(() => {
+    const handleSwitchToCityView = () => {
+      setCurrentView('city');
+    };
+
+    window.addEventListener('switchToCityView', handleSwitchToCityView);
+    
+    return () => {
+      window.removeEventListener('switchToCityView', handleSwitchToCityView);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -52,10 +88,10 @@ export default function GameScreen() {
         {/* Navigation Bar */}
         <GameHeader currentView={currentView} setCurrentView={setCurrentView} />
 
-        {/* Main Content Area - 2 Column Layout */}
+        {/* Main Content Area - Responsive Layout */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Game View Column */}
-          <div className="flex-1 overflow-hidden">
+          {/* Game View Column - Takes most space on desktop */}
+          <div className="flex-1 overflow-hidden min-w-0 relative">
             {currentView === 'city' && (
               <City/>
             )}
@@ -67,10 +103,20 @@ export default function GameScreen() {
             {currentView === 'map' && (
               <Realm/>
             )}
+
+            {/* City Selector - Only over game view areas */}
+            <CitySelector onCitySelect={handleCitySelect} />
           </div>
 
-          {/* Chat Column */}
-          <Chat className="w-96" />
+          {/* Chat Column - Fixed width on desktop, full width on mobile */}
+          <div className="hidden md:block w-80 flex-shrink-0">
+            <Chat className="w-full h-full" />
+          </div>
+          
+          {/* Mobile Chat - Full width at bottom on mobile */}
+          <div className="md:hidden w-full h-64 flex-shrink-0">
+            <Chat className="w-full h-full" />
+          </div>
         </div>
       </div>
     </div>

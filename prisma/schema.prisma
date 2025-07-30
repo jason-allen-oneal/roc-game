@@ -84,6 +84,7 @@ model City {
   mapTileId   Int    @unique
   population  Int       @default(100)
   resources   Json      // Store resources as JSON
+  lastResourceGeneration DateTime @default(now()) @map("last_resource_generation")
   createdAt   DateTime  @default(now())
   player      Player    @relation(fields: [playerId], references: [id])
   mapTile     MapTile   @relation(fields: [mapTileId], references: [id])
@@ -126,6 +127,7 @@ model Research {
   costs       Json?
   description String?  @db.Text
   power       Int      @default(0)
+  researchTime  Int    @default(60) @map("research_time")
   baseValue   Int      @default(0) @map("base_value")
   bonusValue  Int      @default(0) @map("bonus_value")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -159,7 +161,7 @@ model PlayerBuilding {
   playerId    Int
   buildingId  Int
   cityId      Int
-  plotId      String   @map("plot_id")
+  plotId      String?  @map("plot_id")
   level       Int      @default(1)
   isConstructing Boolean @default(false) @map("is_constructing")
   constructionStartedAt DateTime? @map("construction_started_at")
@@ -173,6 +175,7 @@ model PlayerBuilding {
   city        City      @relation(fields: [cityId], references: [id])
 
   @@unique([cityId, plotId])
+  @@index([cityId, plotId])
 }
 
 model PlayerResearch {

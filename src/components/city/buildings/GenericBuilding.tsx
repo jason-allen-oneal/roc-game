@@ -8,8 +8,8 @@ export default function GenericBuilding({ name, level, description }: GenericBui
   return (
     <div className="space-y-4">
       <div className="bg-forest p-4 rounded-lg border border-gold">
-        <h4 className="font-semibold text-gold-light mb-2">{name} Overview</h4>
-        <div className="space-y-2 text-sm text-gold-light">
+        <h4 className="text-sm font-semibold text-gold-light mb-2">{name} Overview</h4>
+        <div className="space-y-2 text-xs text-gold-light">
           <div className="flex justify-between">
             <span>Current Level:</span>
             <span className="font-medium text-gold">{level}</span>
@@ -22,8 +22,8 @@ export default function GenericBuilding({ name, level, description }: GenericBui
       </div>
       
       <div className="bg-forest-light p-4 rounded-lg border border-gold">
-        <h4 className="font-semibold text-gold-light mb-2">Description</h4>
-        <p className="text-sm text-gold-light">{description}</p>
+        <h4 className="text-sm font-semibold text-gold-light mb-2">Description</h4>
+        <p className="text-xs text-gold-light">{description}</p>
       </div>
     </div>
   );

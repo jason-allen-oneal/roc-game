@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
 
 interface Building {
   id: number;
@@ -45,6 +44,9 @@ interface BuildingModalProps {
   existingBuildings: { [key: string]: number }; // building slug -> level
   existingResearch: { [key: string]: number }; // research slug -> level
   onBuildingSelect: (building: Building) => void;
+  isResourceBuilding?: boolean; // Optional prop to filter for resource buildings only
+  towncenterLevel?: number; // Optional prop for field view to show towncenter level
+  availableFieldPlots?: number; // Optional prop for field view to show available plots
 }
 
 export default function BuildingModal({
@@ -57,8 +59,13 @@ export default function BuildingModal({
   cityAge,
   existingBuildings,
   existingResearch,
-  onBuildingSelect
+  onBuildingSelect,
+  isResourceBuilding = false,
+  towncenterLevel,
+  availableFieldPlots
 }: BuildingModalProps) {
+  console.log('BuildingModal rendered with isResourceBuilding:', isResourceBuilding);
+  
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -145,25 +152,44 @@ export default function BuildingModal({
     if (costs.s) costStrings.push(`${costs.s} Stone`);
     if (costs.o) costStrings.push(`${costs.o} Ore`);
     if (costs.g) costStrings.push(`${costs.g} Gold`);
-    
     return costStrings.join(', ');
   };
 
   const formatConstructionTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    if (minutes > 0) {
-      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
     }
-    return `${remainingSeconds}s`;
   };
 
   const handleBuildingClick = (building: Building) => {
-    const { canBuild } = checkRequirements(building);
-    if (canBuild) {
+    const requirements = checkRequirements(building);
+    if (requirements.canBuild) {
       onBuildingSelect(building);
       onClose();
+    } else {
+      alert(`Cannot build ${building.name}:\n${requirements.reasons.join('\n')}`);
     }
+  };
+
+
+
+  // Temporary hardcoded paths for testing
+  const getHardcodedFieldPath = (buildingSlug: string, cityAge: number) => {
+    const paths = {
+      'farm': `/field/food/${cityAge}.png`,
+      'lumbermill': `/field/wood/${cityAge}.png`,
+      'quarry': `/field/stone/${cityAge}.png`,
+      'mine': `/field/ore/${cityAge}.png`
+    };
+    return paths[buildingSlug as keyof typeof paths] || `/field/food/${cityAge}.png`;
   };
 
   if (!isOpen) return null;
@@ -172,7 +198,12 @@ export default function BuildingModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-earth-gradient rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border border-gold shadow-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gold">Build on Plot {plotId.substring(4)}</h2>
+          <h2 className="text-xl font-bold text-gold">
+            {isResourceBuilding 
+              ? `Build Resource Field on Plot ${plotId.substring(5)} (Town Center Level ${towncenterLevel || 1}, ${availableFieldPlots || 0} plots available)`
+              : `Build on Plot ${plotId.substring(4)}`
+            }
+          </h2>
           <button
             onClick={onClose}
             className="text-gold-light hover:text-gold text-2xl transition-colors"
@@ -182,68 +213,122 @@ export default function BuildingModal({
         </div>
 
         {loading ? (
-          <div className="text-gold-light text-center py-8">Loading buildings...</div>
+          <div className="text-center py-8">
+            <div className="text-gold">Loading buildings...</div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {buildings
               .filter(building => building.fieldType === 0) // Only show city buildings, not resource fields
               .filter(building => {
-                // Filter out unique buildings that already exist
-                const uniqueBuildings = ['towncenter', 'smith', 'academy', 'market'];
-                if (uniqueBuildings.includes(building.slug)) {
-                  return !existingBuildings[building.slug]; // Only show if it doesn't exist
+                if (isResourceBuilding) {
+                  // For resource building modal, only show resource buildings
+                  const resourceBuildings = ['farm', 'lumbermill', 'quarry', 'mine'];
+                  return resourceBuildings.includes(building.slug);
+                } else {
+                  // For city building modal, filter out resource buildings and unique buildings
+                  const resourceBuildings = ['farm', 'lumbermill', 'quarry', 'mine'];
+                  if (resourceBuildings.includes(building.slug)) {
+                    return false; // Don't show resource buildings in city
+                  }
+                  
+                  // Filter out unique buildings that already exist
+                  const uniqueBuildings = ['towncenter', 'smith', 'academy', 'market', 'arena', 'wall', 'tower'];
+                  if (uniqueBuildings.includes(building.slug)) {
+                    return !existingBuildings[building.slug]; // Only show if it doesn't exist
+                  }
+                  return true; // Show all non-unique buildings
                 }
-                return true; // Show all non-unique buildings
               })
               .map((building) => {
-                const { canBuild, reasons } = checkRequirements(building);
+                const requirements = checkRequirements(building);
+                const canBuild = requirements.canBuild;
                 
                 return (
                   <div
                     key={building.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                      canBuild
-                        ? 'border-forest hover:border-gold bg-forest-light hover:bg-forest-lighter'
-                        : 'border-forest bg-forest-dark opacity-60'
-                    }`}
                     onClick={() => handleBuildingClick(building)}
+                    className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
+                      canBuild
+                        ? 'border-gold bg-forest-dark hover:bg-forest hover:border-gold-light'
+                        : 'border-gray-600 bg-gray-800 opacity-60 cursor-not-allowed'
+                    }`}
                   >
-                    <div className="flex items-center mb-2">
+                    <div className="flex items-start space-x-3">
                       <div className="w-12 h-12 bg-forest-dark rounded mr-3 flex items-center justify-center border border-forest">
                         <span className="text-xs text-gold-light">
-                          <Image src={`/city/${building.slug}/${cityAge}.png`} alt={building.name} width={48} height={48} />
+                          {(() => {
+                            const imagePath = isResourceBuilding ? getHardcodedFieldPath(building.slug, cityAge) : `/city/${building.slug}/${cityAge}.png`;
+                            
+                            return (
+                              <img 
+                                src={imagePath}
+                                alt={building.name} 
+                                width={48} 
+                                height={48}
+                                style={{ objectFit: 'contain' }}
+                                onError={() => {
+                                  console.error('Failed to load building image:', {
+                                    src: imagePath,
+                                    building: building.slug,
+                                    isResourceBuilding,
+                                    cityAge,
+                                    finalPath: imagePath
+                                  });
+                                }}
+                                onLoad={() => {
+                                  console.log('Successfully loaded building image:', {
+                                    src: imagePath,
+                                    building: building.slug,
+                                    isResourceBuilding,
+                                    cityAge,
+                                    finalPath: imagePath
+                                  });
+                                }}
+                              />
+                            );
+                          })()}
                         </span>
                       </div>
-                      <div>
-                        <h3 className="text-gold font-semibold">{building.name}</h3>
-                        <p className="text-gold-light text-sm">
-                          {building.fieldType === 0 ? 'Building' : 'Resource Field'}
-                        </p>
+                      
+                      <div className="flex-1">
+                        <div>
+                          <h3 className="text-gold font-semibold">{building.name}</h3>
+                          <p className="text-gold-light text-sm">
+                            {isResourceBuilding ? 'Resource Field' : (building.fieldType === 0 ? 'Building' : 'Resource Field')}
+                          </p>
+                        </div>
+                        
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs text-gold-light">
+                            <span className="font-semibold">Cost:</span> {formatCosts(building.costs)}
+                          </p>
+                          <p className="text-xs text-gold-light">
+                            <span className="font-semibold">Time:</span> {formatConstructionTime(building.constructionTime)}
+                          </p>
+                          {building.baseValue > 0 && (
+                            <p className="text-xs text-gold-light">
+                              <span className="font-semibold">Production:</span> {building.baseValue} + {building.bonusValue} per level
+                            </p>
+                          )}
+                          {building.power > 0 && (
+                            <p className="text-xs text-gold-light">
+                              <span className="font-semibold">Power:</span> {building.power}
+                            </p>
+                          )}
+                        </div>
+                        
+                        {!canBuild && requirements.reasons.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-xs text-red-400 font-semibold">Requirements not met:</p>
+                            <ul className="text-xs text-red-300 mt-1">
+                              {requirements.reasons.map((reason, index) => (
+                                <li key={index}>• {reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    
-                    <p className="text-gold-light text-sm mb-2 line-clamp-2">
-                      {building.description}
-                    </p>
-                    
-                    <div className="text-gold text-sm mb-2">
-                      Cost: {formatCosts(building.costs)}
-                    </div>
-                    
-                    <div className="text-gold-light text-sm mb-2">
-                      Construction Time: {formatConstructionTime(building.constructionTime)}
-                    </div>
-                    
-                    {!canBuild && reasons.length > 0 && (
-                      <div className="text-red-400 text-xs">
-                        {reasons.map((reason, index) => (
-                          <div key={index}>• {reason}</div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="text-gold-light text-xs mt-2">
-                      Power: {building.power} | Base: {building.baseValue} | Bonus: {building.bonusValue}
                     </div>
                   </div>
                 );

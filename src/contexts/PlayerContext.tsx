@@ -3,6 +3,14 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useUser } from './UserContext';
 
+interface City {
+  id: number;
+  name: string;
+  age: number;
+  mapTileId: number;
+  createdAt: Date;
+}
+
 interface Player {
   id: number;
   userId: number;
@@ -11,6 +19,7 @@ interface Player {
   gender: string;
   avatar: string;
   createdAt: Date;
+  cities?: City[];
 }
 
 interface PlayerContextType {

@@ -58,19 +58,19 @@ export default function GameHeader({ currentView, setCurrentView }: GameHeaderPr
                     <div className="flex flex-col items-center space-y-2">
                         <h1 className="text-2xl font-bold text-gold-light drop-shadow-lg">Realms of Camelot</h1>
                         <div className="flex space-x-2">
-                            <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
-                                Alliance
-                            </button>
-                            <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
-                                Inventory
-                            </button>
-                            <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
-                                Messages
-                            </button>
-                            <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
-                                Shop
-                            </button>
-                        </div>
+                        <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
+                            Alliance
+                        </button>
+                        <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
+                            Inventory
+                        </button>
+                        <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
+                            Messages
+                        </button>
+                        <button className="px-3 py-1 rounded text-sm font-medium bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest transition-colors">
+                            Shop
+                        </button>
+                    </div>
                         {/* Resource Icons and Counts */}
                         <div className="flex space-x-4 bg-earth-dark bg-opacity-80 px-4 py-2 rounded border border-gold">
                             <div className="flex items-center space-x-1">

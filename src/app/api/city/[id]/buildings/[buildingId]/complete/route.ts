@@ -8,7 +8,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string; buildingId: string }> }
 ) {
-  logger.apiRequest('POST', `/api/city/[id]/buildings/[buildingId]/complete`, { params: await params });
+  logger.info('Building complete API - request received', { params: await params });
   
   try {
     const session = await getServerSession(authOptions);

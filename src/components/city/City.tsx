@@ -5,7 +5,7 @@ import { useCity } from '@/contexts/CityContext';
 import CityMap from './CityMap';
 import BuildingModal from './BuildingModal';
 import BuildingManagementModal from './BuildingManagementModal';
-import ConstructionTimer from './ConstructionTimer';
+import GameTimers from './GameTimers';
 import NotificationModal from '../NotificationModal';
 import logger from '@/lib/logger';
 
@@ -36,7 +36,7 @@ interface PlayerBuilding {
 }
 
 const City = React.memo(function City() {
-  const { currentCity, currentCityBuildings, refreshCityData } = useCity();
+  const { currentCity, currentCityBuildings, currentCityResearch, refreshCityData } = useCity();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isManagementModalOpen, setIsManagementModalOpen] = useState(false);
   const [selectedPlotId, setSelectedPlotId] = useState<string | null>(null);
@@ -66,12 +66,15 @@ const City = React.memo(function City() {
     return buildings;
   }, [currentCityBuildings]);
 
-  // Derive existing research (placeholder for now)
+  // Derive existing research from currentCityResearch
   const existingResearch = useMemo(() => {
-    const research: Record<string, number> = {};
+    const research: { [key: string]: number } = {};
+    currentCityResearch.forEach(pr => {
+      research[pr.research.slug] = pr.level;
+    });
     logger.debug('City - existing research calculated', { research });
     return research;
-  }, []);
+  }, [currentCityResearch]);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
     setNotification({
@@ -106,6 +109,17 @@ const City = React.memo(function City() {
 
   const handleBuildingSelect = async (building: Building) => {
     if (!currentCity) return;
+
+    // Wall buildings don't require a plot
+    if (building.slug === 'wall' && !selectedPlotId) {
+      // For wall buildings, we can proceed without a plot
+    } else if (!selectedPlotId) {
+      logger.error('City - missing plot ID for building construction', { 
+        buildingSlug: building.slug,
+        plotId: selectedPlotId 
+      });
+      return;
+    }
     
     logger.debug('City - building selected for construction', { 
       buildingId: building.id, 
@@ -122,7 +136,7 @@ const City = React.memo(function City() {
         },
         body: JSON.stringify({
           buildingSlug: building.slug,
-          plotId: selectedPlotId
+          plotId: building.slug === 'wall' ? null : selectedPlotId
         }),
       });
 
@@ -250,9 +264,13 @@ const City = React.memo(function City() {
         refreshTrigger={refreshTrigger}
       />
 
-      <ConstructionTimer
+      <GameTimers
         cityId={currentCity.id}
         onConstructionComplete={handleConstructionComplete}
+        onResearchComplete={() => {
+          // TODO: Refresh research data
+          logger.debug('City - research completed, should refresh data');
+        }}
       />
 
       {isModalOpen && selectedPlotId && (
@@ -279,8 +297,14 @@ const City = React.memo(function City() {
           cityId={currentCity.id}
           cityResources={currentCity.resources}
           cityAge={currentCity.age}
+          cityBuildings={currentCityBuildings}
+          existingResearch={existingResearch}
           onUpgrade={handleBuildingUpgrade}
           onDemolish={handleBuildingDemolish}
+          onResearchStart={() => {
+            // TODO: Refresh research data
+            logger.debug('City - research started, should refresh data');
+          }}
           onClose={() => {
             setIsManagementModalOpen(false);
             setSelectedBuilding(null);

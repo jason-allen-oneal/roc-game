@@ -48,8 +48,18 @@ const ConstructionTimer = React.memo(function ConstructionTimer({ onConstruction
   const { currentCityBuildings } = useCity();
   const [completedBuildings, setCompletedBuildings] = useState<Set<number>>(new Set());
   const [isDismissed, setIsDismissed] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const dismissedRef = useRef(false);
   const prevConstructionCountRef = useRef(0);
+
+  // Real-time timer that updates every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Get ongoing constructions from context
   const constructions: ConstructionProject[] = useMemo(() => {
@@ -67,7 +77,7 @@ const ConstructionTimer = React.memo(function ConstructionTimer({ onConstruction
     
     logger.debug('Construction timer - ongoing constructions', { 
       count: constructingBuildings.length,
-      buildingIds: constructingBuildings.map(b => b.id)
+      buildingIds: constructingBuildings.map(b => b.id).join(',')
     });
     
     return constructingBuildings;
@@ -110,21 +120,46 @@ const ConstructionTimer = React.memo(function ConstructionTimer({ onConstruction
           .filter((building: PlayerBuilding) => 
             building.isConstructing && 
             building.constructionEndsAt &&
-            new Date(building.constructionEndsAt) <= new Date() &&
+            new Date(building.constructionEndsAt) <= currentTime &&
             !completedBuildings.has(building.id)
           );
 
         for (const building of completedConstructions) {
-          logger.info('ConstructionTimer - marking construction as complete', { buildingId: building.id });
+          logger.info('ConstructionTimer - construction complete, calling API', { buildingId: building.id });
+          
+          try {
+            // Call the completion API to update the database
+            const response = await fetch(`/api/city/${building.cityId}/buildings/${building.id}/complete`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              logger.error('ConstructionTimer - failed to complete construction via API', { 
+                buildingId: building.id, 
+                error: errorData.error || 'Unknown error'
+              });
+              continue;
+            }
+
+            logger.info('ConstructionTimer - construction completed successfully via API', { buildingId: building.id });
           
           // Mark as completed locally
           setCompletedBuildings(prev => new Set([...prev, building.id]));
           
-          // Call the completion callback
+            // Call the completion callback to refresh city data
           onConstructionComplete?.();
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error('ConstructionTimer - error calling completion API', { buildingId: building.id, error: errorMessage });
+          }
         }
       } catch (error) {
-        logger.error('ConstructionTimer - error checking completed constructions', { error });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('ConstructionTimer - error checking completed constructions', { error: errorMessage });
       }
     };
 
@@ -138,8 +173,7 @@ const ConstructionTimer = React.memo(function ConstructionTimer({ onConstruction
 
   const formatTimeRemaining = (endTime: string) => {
     const end = new Date(endTime);
-    const now = new Date();
-    const diff = end.getTime() - now.getTime();
+    const diff = end.getTime() - currentTime.getTime();
     
     if (diff <= 0) return 'Complete!';
     
@@ -159,7 +193,7 @@ const ConstructionTimer = React.memo(function ConstructionTimer({ onConstruction
   const getProgress = (startTime: string, endTime: string) => {
     const start = new Date(startTime).getTime();
     const end = new Date(endTime).getTime();
-    const now = new Date().getTime();
+    const now = currentTime.getTime();
     
     if (now >= end) return 100;
     if (now <= start) return 0;
@@ -194,7 +228,7 @@ const ConstructionTimer = React.memo(function ConstructionTimer({ onConstruction
                   <span className="text-gold-light text-sm font-medium">
                     {construction.buildingName} (Level {construction.level})
                   </span>
-                  <span className="text-gold text-xs">{timeRemaining}</span>
+                  <span className="text-gold text-xs w-16 text-right">{timeRemaining}</span>
                 </div>
                 
                 <div className="w-full bg-forest-dark rounded-full h-2">

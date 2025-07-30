@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import logger from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -13,56 +14,77 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const resolvedParams = await params;
-    const kingdomId = parseInt(resolvedParams.id);
+    const { id } = await params;
+    const kingdomId = parseInt(id);
+
     if (isNaN(kingdomId)) {
       return NextResponse.json({ error: 'Invalid kingdom ID' }, { status: 400 });
     }
 
-    // Get query parameters for viewport
-    const searchParams = request.nextUrl.searchParams;
-    const centerX = parseInt(searchParams.get('centerX') || '0');
-    const centerY = parseInt(searchParams.get('centerY') || '0');
-    const viewportSize = parseInt(searchParams.get('viewportSize') || '50');
-
-    // Validate viewport size (prevent abuse)
-    const maxViewportSize = 100;
-    const actualViewportSize = Math.min(viewportSize, maxViewportSize);
-
-    // Calculate viewport bounds
-    const startX = Math.max(0, centerX - Math.floor(actualViewportSize / 2));
-    const endX = Math.min(749, centerX + Math.floor(actualViewportSize / 2));
-    const startY = Math.max(0, centerY - Math.floor(actualViewportSize / 2));
-    const endY = Math.min(749, centerY + Math.floor(actualViewportSize / 2));
-
-    // Check if user has access to this kingdom
+    // Get the player's current city to center the view
     const player = await prisma.player.findFirst({
       where: {
         userId: session.user.id,
         kingdomId: kingdomId
+      },
+      include: {
+        cities: {
+          include: {
+            mapTile: true
+          }
+        }
       }
     });
 
     if (!player) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
-    // Load tiles in viewport
+    // Get the player's current city (or first city if none selected)
+    const currentCity = player.cities.find(city => city.id === player.lastCity) || player.cities[0];
+    
+    // Fetch the current city with its mapTile relation
+    const cityWithMapTile = await prisma.city.findUnique({
+      where: { id: currentCity.id },
+      include: { mapTile: true }
+    });
+    
+    if (!cityWithMapTile) {
+      return NextResponse.json({ error: 'City not found' }, { status: 404 });
+    }
+    
+    if (!currentCity) {
+      return NextResponse.json({ error: 'No city found' }, { status: 404 });
+    }
+
+    // Get query parameters for viewport (Camelot-style)
+    const url = new URL(request.url);
+    const centerX = parseInt(url.searchParams.get('centerX') || cityWithMapTile.mapTile.x.toString());
+    const centerY = parseInt(url.searchParams.get('centerY') || cityWithMapTile.mapTile.y.toString());
+    const viewportSize = parseInt(url.searchParams.get('viewportSize') || '20');
+    
+    const minX = centerX - Math.floor(viewportSize / 2);
+    const maxX = centerX + Math.floor(viewportSize / 2);
+    const minY = centerY - Math.floor(viewportSize / 2);
+    const maxY = centerY + Math.floor(viewportSize / 2);
+
+    // Fetch tiles in the viewport
     const tiles = await prisma.mapTile.findMany({
       where: {
-        kingdomId,
-        x: { gte: startX, lte: endX },
-        y: { gte: startY, lte: endY }
+        kingdomId: kingdomId,
+        x: {
+          gte: minX,
+          lte: maxX
+        },
+        y: {
+          gte: minY,
+          lte: maxY
+        }
       },
       include: {
         city: {
           include: {
-            player: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
+            player: true
           }
         }
       },
@@ -72,25 +94,69 @@ export async function GET(
       ]
     });
 
+    // Get all cities in the viewport for city markers
+    const cities = tiles
+      .filter(tile => tile.city)
+      .map(tile => ({
+        id: tile.city!.id,
+        name: tile.city!.name,
+        age: tile.city!.age,
+        x: tile.x,
+        y: tile.y,
+        playerName: tile.city!.player.name,
+        playerId: tile.city!.playerId
+      }));
+
+    // Ensure the player's current city is always included
+    const playerCityInViewport = cities.find(city => city.id === cityWithMapTile.id);
+    if (!playerCityInViewport) {
+      // Add the player's city to the cities array
+      cities.push({
+        id: cityWithMapTile.id,
+        name: cityWithMapTile.name,
+        age: cityWithMapTile.age,
+        x: cityWithMapTile.mapTile.x,
+        y: cityWithMapTile.mapTile.y,
+        playerName: player.name,
+        playerId: player.id
+      });
+    }
+
+    logger.debug('Kingdom tiles - fetched viewport (Camelot-style)', {
+      kingdomId,
+      centerX,
+      centerY,
+      viewportSize,
+      tileCount: tiles.length,
+      cityCount: cities.length,
+      userId: session.user.id
+    });
+
     return NextResponse.json({
-      tiles,
+      tiles: tiles.map(tile => ({
+        id: tile.id,
+        x: tile.x,
+        y: tile.y,
+        type: tile.type,
+        level: tile.level,
+        hasCity: !!tile.city
+      })),
+      cities,
       viewport: {
-        startX,
-        endX,
-        startY,
-        endY,
         centerX,
         centerY,
-        size: actualViewportSize
-      },
-      totalTiles: tiles.length
+        minX,
+        maxX,
+        minY,
+        maxY
+      }
     });
 
   } catch (error) {
-    console.error('Error fetching tiles:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger.error('Kingdom tiles - error fetching tiles', { 
+      kingdomId: String(params), 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+    return NextResponse.json({ error: 'Failed to fetch kingdom tiles' }, { status: 500 });
   }
 } 

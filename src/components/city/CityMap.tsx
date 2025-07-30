@@ -55,6 +55,26 @@ const CityMap = React.memo(function CityMap({ cityAge = 1, onBuildingClick, onPl
   const { currentCityBuildings } = useCity();
   const plotImage = '/city/plot.png';
 
+  // Helper function to get the correct background image based on wall and city age
+  const getBackgroundImage = () => {
+    // Check if player has a wall building
+    const hasWall = currentCityBuildings.some(building => building.building.slug === 'wall');
+    
+    if (!hasWall) {
+      return '/city/base.png'; // Default background when no wall
+    }
+    
+    // Player has a wall, use age-appropriate base image
+    if (cityAge === 1) {
+      return '/city/base-1.png';
+    } else if (cityAge === 2) {
+      return '/city/base-2.png';
+    } else {
+      // Age 3 and 4+ use base-3
+      return '/city/base-3.png';
+    }
+  };
+
   // Create building areas from currentCityBuildings
   const buildingAreas: BuildingArea[] = useMemo(() => {
     logger.debug('CityMap - currentCityBuildings updated', { 
@@ -64,6 +84,11 @@ const CityMap = React.memo(function CityMap({ cityAge = 1, onBuildingClick, onPl
     const areas: BuildingArea[] = [];
     
     currentCityBuildings.forEach((playerBuilding: PlayerBuilding) => {
+      // Skip wall buildings as they don't occupy plots
+      if (playerBuilding.building.slug === 'wall') {
+        return;
+      }
+      
       // Use the plotId from the database to map buildings to their correct plots
       // The plotId should be in the format 'plot1', 'plot2', etc.
       const plotId = playerBuilding.plotId || 'plot27'; // Fallback for Town Center
@@ -142,150 +167,151 @@ const CityMap = React.memo(function CityMap({ cityAge = 1, onBuildingClick, onPl
 
     { id: 'plot34', left: '50%', top: '83.6%', width: 99, height: 55 },
     { id: 'plot35', left: '43.8%', top: '77.8%', width: 99, height: 55 },
-    { id: 'plot36', left: '26.2%', top: '62.8%', width: 99, height: 55 },
-    { id: 'plot37', left: '19.6%', top: '56.6%', width: 99, height: 55 },
+    { id: 'plot36', left: '35%', top: '70%', width: 99, height: 55 },
+    { id: 'plot37', left: '26.8%', top: '62.4%', width: 99, height: 55 },
+    { id: 'plot38', left: '21%', top: '56%', width: 99, height: 55 },
 
-    { id: 'plot38', left: '43.8%', top: '89.4%', width: 99, height: 55 },
-    { id: 'plot39', left: '37.6%', top: '83.6%', width: 99, height: 55 },
-    { id: 'plot40', left: '19.6%', top: '69.4%', width: 99, height: 55 },
-    { id: 'plot41', left: '13%', top: '63.2%', width: 99, height: 55 },
-
-    { id: 'plot42', left: '37.6%', top: '95.2%', width: 99, height: 55 },
-    { id: 'plot43', left: '31.4%', top: '89.4%', width: 99, height: 55 },
-    { id: 'plot44', left: '13%', top: '76%', width: 99, height: 55 },
-    { id: 'plot45', left: '6.4%', top: '69.8%', width: 99, height: 55 },
+    { id: 'plot39', left: '44.6%', top: '89.6%', width: 99, height: 55 },
+    { id: 'plot40', left: '38.4%', top: '83.6%', width: 99, height: 55 },
+    { id: 'plot41', left: '29.8%', top: '75.6%', width: 99, height: 55 },
+    { id: 'plot42', left: '20.8%', top: '67.6%', width: 99, height: 55 },
+    { id: 'plot43', left: '14.8%', top: '62%', width: 99, height: 55 },
   ];
 
   return (
-    <div className="relative w-full h-full">
-      {/* Background */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/city/base.png)' }}
-      />
-      
-      {plotAreas.map(plot => {
-        // Check if this plot has a building
-        const buildingArea = buildingAreas.find(area => area.id === plot.id);
+    <div className="flex justify-center items-center w-full h-full">
+      <div className="relative" style={{ width: '840px', height: '476px' }}>
+        {/* Background */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${getBackgroundImage()})` }}
+        />
         
-        if (buildingArea && buildingArea.playerBuilding) {
-          // This plot has a building - show the building
-          const building = buildingArea.playerBuilding.building;
-          const isConstructing = buildingArea.isConstructing;
+        {plotAreas.map(plot => {
+          // Check if this plot has a building
+          const buildingArea = buildingAreas.find(area => area.id === plot.id);
           
-          // Calculate construction progress if building is under construction
-          let constructionProgress = 0;
-          if (isConstructing && buildingArea.playerBuilding.constructionStartedAt && buildingArea.playerBuilding.constructionEndsAt) {
-            const now = new Date().getTime();
-            const start = new Date(buildingArea.playerBuilding.constructionStartedAt).getTime();
-            const end = new Date(buildingArea.playerBuilding.constructionEndsAt).getTime();
+          if (buildingArea && buildingArea.playerBuilding) {
+            // This plot has a building - show the building
+            const building = buildingArea.playerBuilding.building;
+            const isConstructing = buildingArea.isConstructing;
             
-            if (now >= end) {
-              constructionProgress = 100;
-            } else if (now > start) {
-              constructionProgress = ((now - start) / (end - start)) * 100;
+            // Calculate construction progress if building is under construction
+            let constructionProgress = 0;
+            let shouldShowConstruction = false;
+            if (isConstructing && buildingArea.playerBuilding.constructionStartedAt && buildingArea.playerBuilding.constructionEndsAt) {
+              const now = new Date().getTime();
+              const start = new Date(buildingArea.playerBuilding.constructionStartedAt).getTime();
+              const end = new Date(buildingArea.playerBuilding.constructionEndsAt).getTime();
+              
+              if (now >= end) {
+                constructionProgress = 100;
+                shouldShowConstruction = false; // Don't show construction indicator if time has elapsed
+              } else if (now > start) {
+                constructionProgress = ((now - start) / (end - start)) * 100;
+                shouldShowConstruction = true;
+              }
             }
-          }
-          
-          return (
-            <div
-              key={plot.id}
-              className="absolute cursor-pointer transition-all duration-200"
-              style={{
-                left: plot.left,
-                top: plot.top,
-                width: plot.width,
-                height: plot.height,
-                transform: 'translate(-50%, -50%)',
-              }}
-              onClick={() => handleAreaClick(buildingArea.playerBuilding!.id.toString())}
-              title={`${building.name} (Level ${buildingArea.level})${isConstructing ? ' - Constructing' : ''}`}
-            >
-              <img
-                src={`/city/${building.slug}/${cityAge || 1}.png`}
-                alt={building.name}
-                className={`object-contain ${isConstructing ? 'opacity-70 animate-pulse' : ''}`}
+            
+            return (
+              <div
+                key={plot.id}
+                className="absolute cursor-pointer transition-all duration-200"
                 style={{
-                  maxWidth: '99.6%',
-                  maxHeight: '99.6%',
-                  marginTop: '-10px',
-                  marginLeft: '-5px',
-                  width: '100%',
-                  height: '100%',
-                  position: 'relative',
-                  zIndex: 1,
-                  backgroundColor: 'transparent'
+                  left: plot.left,
+                  top: plot.top,
+                  width: plot.width,
+                  height: plot.height,
+                  transform: 'translate(-50%, -50%)',
                 }}
-                onError={() => {
-                  logger.error('CityMap - failed to load image', { 
-                    imagePath: `/city/${building.slug}/${cityAge || 1}.png`,
-                    buildingData: building,
-                    cityAge: cityAge,
-                    fullImagePath: `/city/${building.slug}/${cityAge || 1}.png`
-                  });
-                }}
-                onLoad={() => {
-                  logger.debug('CityMap - successfully loaded image', { 
-                    imagePath: `/city/${building.slug}/${cityAge || 1}.png`
-                  });
-                }}
-              />
-              {isConstructing && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 2 }}>
-                  {/* Construction progress bar */}
-                  <div className="w-full max-w-[40%] bg-gray-700 rounded-full h-1 mb-1">
-                    <div 
-                      className="bg-yellow-400 h-1 rounded-full transition-all duration-1000 ease-out" 
-                      style={{ width: `${constructionProgress}%` }}
-                    />
+                onClick={() => handleAreaClick(buildingArea.playerBuilding!.id.toString())}
+                title={`${building.name} (Level ${buildingArea.level})${shouldShowConstruction ? ' - Constructing' : ''}`}
+              >
+                <img
+                  src={`/city/${building.slug}/${cityAge || 1}.png`}
+                  alt={building.name}
+                  className={`object-contain ${shouldShowConstruction ? 'opacity-70 animate-pulse' : ''}`}
+                  style={{
+                    maxWidth: '99.6%',
+                    maxHeight: '99.6%',
+                    marginTop: '-10px',
+                    marginLeft: '-5px',
+                    width: '100%',
+                    height: '100%',
+                    position: 'relative',
+                    zIndex: 1,
+                    backgroundColor: 'transparent'
+                  }}
+                  onError={() => {
+                    logger.error('CityMap - failed to load image', { 
+                      imagePath: `/city/${building.slug}/${cityAge || 1}.png`,
+                      cityAge: cityAge,
+                      fullImagePath: `/city/${building.slug}/${cityAge || 1}.png`
+                    });
+                  }}
+                  onLoad={() => {
+                    logger.debug('CityMap - successfully loaded image', { 
+                      imagePath: `/city/${building.slug}/${cityAge || 1}.png`
+                    });
+                  }}
+                />
+                {shouldShowConstruction && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 2 }}>
+                    {/* Construction progress bar */}
+                    <div className="w-full max-w-[40%] bg-gray-700 rounded-full h-1 mb-1">
+                      <div 
+                        className="bg-yellow-400 h-1 rounded-full transition-all duration-1000 ease-out" 
+                        style={{ width: `${constructionProgress}%` }}
+                      />
+                    </div>
+                    {/* Construction icon */}
+                    <div className="text-yellow-400 text-sm mb-0.5 animate-bounce">🔨</div>
+                    <div className="text-white text-[8px] font-bold drop-shadow-lg">CONSTRUCTING</div>
+                    <div className="text-yellow-400 text-[8px] drop-shadow-lg">{Math.round(constructionProgress)}%</div>
                   </div>
-                  {/* Construction icon */}
-                  <div className="text-yellow-400 text-sm mb-0.5 animate-bounce">🔨</div>
-                  <div className="text-white text-[8px] font-bold drop-shadow-lg">CONSTRUCTING</div>
-                  <div className="text-yellow-400 text-[8px] drop-shadow-lg">{Math.round(constructionProgress)}%</div>
-                </div>
-              )}
-            </div>
-          );
-        } else {
-          // This plot is empty - show plot image
-          return (
-            <div
-              key={plot.id}
-              className="absolute cursor-pointer transition-all duration-200"
-              style={{
-                left: plot.left,
-                top: plot.top,
-                width: plot.width,
-                height: plot.height,
-                transform: 'translate(-50%, -50%)',
-              }}
-              onClick={() => handlePlotClick(plot.id)}
-              title={`Plot ${plot.id.substring(4)}`}
-            >
-              <img
-                src={plotImage}
-                alt={`Plot ${plot.id}`}
-                className="object-contain"
+                )}
+              </div>
+            );
+          } else {
+            // This plot is empty - show plot image
+            return (
+              <div
+                key={plot.id}
+                className="absolute cursor-pointer transition-all duration-200"
                 style={{
-                  width: '100%',
-                  height: '100%'
+                  left: plot.left,
+                  top: plot.top,
+                  width: plot.width,
+                  height: plot.height,
+                  transform: 'translate(-50%, -50%)',
                 }}
-                onError={() => {
-                  logger.error('CityMap - failed to load plot image', { 
-                    imagePath: plotImage
-                  });
-                }}
-                onLoad={() => {
-                  logger.debug('CityMap - successfully loaded plot image', { 
-                    imagePath: plotImage
-                  });
-                }}
-              />
-            </div>
-          );
-        }
-      })}
+                onClick={() => handlePlotClick(plot.id)}
+                title={`Plot ${plot.id.substring(4)}`}
+              >
+                <img
+                  src={plotImage}
+                  alt={`Plot ${plot.id}`}
+                  className="object-contain"
+                  style={{
+                    width: '100%',
+                    height: '100%'
+                  }}
+                  onError={() => {
+                    logger.error('CityMap - failed to load plot image', { 
+                      imagePath: plotImage
+                    });
+                  }}
+                  onLoad={() => {
+                    logger.debug('CityMap - successfully loaded plot image', { 
+                      imagePath: plotImage
+                    });
+                  }}
+                />
+              </div>
+            );
+          }
+        })}
+      </div>
     </div>
   );
 });

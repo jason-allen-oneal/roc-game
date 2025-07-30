@@ -56,14 +56,16 @@ const Chat: React.FC<ChatProps> = ({ className = '' }) => {
           setAllianceName('');
         }
       } catch (error) {
-        logger.error('Chat - failed to check alliance membership', { error });
+        logger.error('Chat - failed to check alliance membership', { 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        });
         setHasAlliance(false);
         setAllianceName('');
       }
     };
     
     checkAllianceMembership();
-  }, [player]);
+  }, [player?.id]);
 
   // Socket.IO connection
   useEffect(() => {
@@ -91,7 +93,9 @@ const Chat: React.FC<ChatProps> = ({ className = '' }) => {
     });
     
     socketInstance.on('message-error', (error) => {
-      logger.error('Chat - message error', { error });
+      logger.error('Chat - message error', { 
+        error: typeof error === 'string' ? error : 'Unknown error' 
+      });
       // Could show a toast notification here
     });
     
@@ -190,12 +194,12 @@ const Chat: React.FC<ChatProps> = ({ className = '' }) => {
   return (
     <div className={`bg-earth-gradient border-l border-gold flex flex-col ${className}`}>
       {/* Chat Header with Tabs */}
-      <div className="bg-earth-dark px-4 py-3 border-b border-gold">
-        <h3 className="text-lg font-semibold text-gold mb-2">Chat</h3>
+      <div className="bg-earth-dark px-2 sm:px-4 py-2 sm:py-3 border-b border-gold">
+        <h3 className="text-base sm:text-lg font-semibold text-gold mb-2">Chat</h3>
         <div className="flex space-x-1">
           <button
             onClick={() => handleRoomChange('global')}
-            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+            className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium transition-colors ${
               activeRoom === 'global'
                 ? 'bg-gold-gradient text-forest-dark font-semibold shadow-lg'
                 : 'bg-forest-light text-gold-light hover:bg-forest-lighter border border-forest'
@@ -206,7 +210,7 @@ const Chat: React.FC<ChatProps> = ({ className = '' }) => {
           <button
             onClick={() => handleRoomChange('alliance')}
             disabled={!hasAlliance}
-            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+            className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium transition-colors ${
               activeRoom === 'alliance'
                 ? 'bg-gold-gradient text-forest-dark font-semibold shadow-lg'
                 : hasAlliance

@@ -6,7 +6,7 @@ import logger from '@/lib/logger';
 
 interface BuildRequest {
   buildingSlug: string;
-  plotId: string;
+  plotId: string | null;
 }
 
 interface Building {
@@ -38,14 +38,19 @@ export async function POST(
     const body: BuildRequest = await request.json();
     const { buildingSlug, plotId } = body;
 
-    if (!buildingSlug || !plotId) {
-      return NextResponse.json({ error: 'Missing buildingSlug or plotId' }, { status: 400 });
+    if (!buildingSlug) {
+      return NextResponse.json({ error: 'Missing buildingSlug' }, { status: 400 });
+    }
+
+    // Wall buildings don't require a plotId
+    if (buildingSlug !== 'wall' && !plotId) {
+      return NextResponse.json({ error: 'Missing plotId' }, { status: 400 });
     }
 
     logger.info('City build - starting construction', { 
       cityId, 
       buildingSlug, 
-      plotId,
+      plotId: plotId || 'null',
       userId: session.user.id 
     });
 
@@ -67,7 +72,12 @@ export async function POST(
         }
       },
       include: {
-        player: true
+        player: true,
+        playerResearch: {
+          include: {
+            research: true
+          }
+        }
       }
     });
 
@@ -76,10 +86,14 @@ export async function POST(
     }
 
     // Check if there's already a building under construction in this city
+    const now = new Date();
     const existingConstruction = await prisma.playerBuilding.findFirst({
       where: {
         cityId: cityId,
-        isConstructing: true
+        isConstructing: true,
+        constructionEndsAt: {
+          gt: now // Only consider buildings that haven't finished construction yet
+        }
       },
       include: {
         building: true
@@ -92,20 +106,22 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Check if this plot already has a building
-    const existingBuilding = await prisma.playerBuilding.findFirst({
-      where: {
-        cityId: cityId,
-        plotId: plotId
-      }
-    });
+    // Check if this plot already has a building (skip for wall buildings)
+    if (buildingSlug !== 'wall' && plotId) {
+      const existingBuilding = await prisma.playerBuilding.findFirst({
+        where: {
+          cityId: cityId,
+          plotId: plotId as string
+        }
+      });
 
-    if (existingBuilding) {
-      return NextResponse.json({ error: 'Plot already has a building' }, { status: 400 });
+      if (existingBuilding) {
+        return NextResponse.json({ error: 'Plot already has a building' }, { status: 400 });
+      }
     }
 
     // Soft unique check for specific building types
-    if (['towncenter', 'smith', 'academy', 'market'].includes(buildingSlug)) {
+    if (['towncenter', 'smith', 'academy', 'market', 'arena', 'wall', 'tower', 'storage'].includes(buildingSlug)) {
       const existingBuildingOfType = await prisma.playerBuilding.findFirst({
         where: {
           cityId: cityId,
@@ -120,9 +136,31 @@ export async function POST(
       }
     }
 
+    // Calculate research bonuses for construction
+    const architectureResearch = city.playerResearch.find(pr => pr.research.slug === 'architecture');
+    const architectureLevel = architectureResearch?.level || 0;
+    const architectureBonus = architectureLevel > 0 && architectureResearch ? 
+      (architectureResearch.research.baseValue + (architectureLevel - 1) * architectureResearch.research.bonusValue) : 0;
+    
+    // Apply construction time reduction from Architecture research
+    const constructionTimeReduction = architectureBonus / 100; // Convert percentage to decimal
+    const adjustedConstructionTime = Math.max(
+      building.constructionTime * (1 - constructionTimeReduction), 
+      building.constructionTime * 0.5 // Minimum 50% of original time
+    );
+
+    logger.debug('City build - construction time calculation', {
+      buildingSlug,
+      originalTime: building.constructionTime,
+      architectureLevel,
+      architectureBonus,
+      constructionTimeReduction,
+      adjustedConstructionTime
+    });
+
     // Calculate construction times
     const constructionStartedAt = new Date();
-    const constructionEndsAt = new Date(constructionStartedAt.getTime() + (building.constructionTime * 1000));
+    const constructionEndsAt = new Date(constructionStartedAt.getTime() + (adjustedConstructionTime * 1000));
 
     // Create the player building
     const playerBuilding = await prisma.playerBuilding.create({
@@ -130,7 +168,7 @@ export async function POST(
         playerId: city.playerId,
         buildingId: building.id,
         cityId: cityId,
-        plotId: plotId,
+        plotId: buildingSlug === 'wall' ? null : (plotId as string), // Wall doesn't use a plot
         level: 1,
         isConstructing: true,
         constructionStartedAt: constructionStartedAt,
@@ -145,9 +183,9 @@ export async function POST(
       cityId, 
       buildingId: building.id,
       buildingSlug,
-      plotId,
-      constructionStartedAt,
-      constructionEndsAt,
+      plotId: String(plotId || 'null'),
+      constructionStartedAt: constructionStartedAt.toISOString(),
+      constructionEndsAt: constructionEndsAt.toISOString(),
       userId: session.user.id 
     });
 
@@ -160,7 +198,7 @@ export async function POST(
 
   } catch (error) {
     logger.error('City build - error starting construction', { 
-      cityId: params, 
+      cityId: String(params), 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
     return NextResponse.json({ error: 'Failed to start construction' }, { status: 500 });

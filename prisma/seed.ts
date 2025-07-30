@@ -14,7 +14,8 @@ const researchData = [
     description: 'Woodworking allows better lumber production, as well as governing which troops you can train.',
     power: 300,
     baseValue: 10,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 300 // 5 minutes
   },
   {
     id: 2,
@@ -25,7 +26,8 @@ const researchData = [
     description: 'Enhance your crop yields and feed a growing population.',
     power: 300,
     baseValue: 10,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 300 // 5 minutes
   },
   {
     id: 3,
@@ -36,7 +38,8 @@ const researchData = [
     description: 'Dig deeper and harvest more stone and ore from the earth.',
     power: 300,
     baseValue: 10,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 300 // 5 minutes
   },
   {
     id: 4,
@@ -47,7 +50,8 @@ const researchData = [
     description: 'Fletching allows the training of ranged troops, as well as increasing the range.',
     power: 600,
     baseValue: 30,
-    bonusValue: 2
+    bonusValue: 2,
+    researchTime: 600 // 10 minutes
   },
   {
     id: 5,
@@ -57,8 +61,9 @@ const researchData = [
     costs: { f: 1000, w: 2000, s: 1000, o: 500 },
     description: 'Refine your blueprints to build faster and smarter.',
     power: 500,
-    baseValue: 20,
-    bonusValue: 2
+    baseValue: 2,
+    bonusValue: 2,
+    researchTime: 480 // 8 minutes
   },
   {
     id: 6,
@@ -69,7 +74,8 @@ const researchData = [
     description: 'Metallurgy allows the crafting of metal objects, such as weapons.',
     power: 600,
     baseValue: 30,
-    bonusValue: 2
+    bonusValue: 2,
+    researchTime: 720 // 12 minutes
   },
   {
     id: 7,
@@ -80,7 +86,8 @@ const researchData = [
     description: 'Craftsmanship is the ability to build things, such as siege engines.',
     power: 400,
     baseValue: 40,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 600 // 10 minutes
   },
   {
     id: 8,
@@ -91,7 +98,8 @@ const researchData = [
     description: 'Conscription reduces the the time required to train troops.',
     power: 400,
     baseValue: 20,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 540 // 9 minutes
   },
   {
     id: 9,
@@ -102,7 +110,8 @@ const researchData = [
     description: 'Mysticism allows the building of the cathedral, as well as the ability to train Monk units.',
     power: 500,
     baseValue: 20,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 600 // 10 minutes
   },
   {
     id: 10,
@@ -113,7 +122,8 @@ const researchData = [
     description: 'Medicine grants Monk units the ability to heal other units.',
     power: 500,
     baseValue: 30,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 720 // 12 minutes
   },
   {
     id: 11,
@@ -124,7 +134,8 @@ const researchData = [
     description: 'Engineering grants the ability to build siege units.',
     power: 600,
     baseValue: 40,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 900 // 15 minutes
   },
   {
     id: 12,
@@ -135,7 +146,8 @@ const researchData = [
     description: 'Ballistics improves the accuracy of ranged units, as well as granting the ability to train some units.',
     power: 600,
     baseValue: 40,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 1200 // 20 minutes
   },
   {
     id: 13,
@@ -146,7 +158,8 @@ const researchData = [
     description: 'Hoardings allows more protection of resources.',
     power: 500,
     baseValue: 30,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 600 // 10 minutes
   },
   {
     id: 14,
@@ -157,7 +170,8 @@ const researchData = [
     description: 'Banking reduces the cost of trade.',
     power: 300,
     baseValue: 20,
-    bonusValue: 5
+    bonusValue: 5,
+    researchTime: 900 // 15 minutes
   }
 ]
 
@@ -174,7 +188,7 @@ const buildingData = [
     power: 500,
     baseValue: 0,
     bonusValue: 10,
-    constructionTime: 120 // 2 minutes
+    constructionTime: 180
   },
   {
     id: 2,
@@ -187,7 +201,7 @@ const buildingData = [
     power: 100,
     baseValue: 1,
     bonusValue: 10,
-    constructionTime: 90 // 1.5 minutes
+    constructionTime: 120
   },
   {
     id: 3,
@@ -239,7 +253,7 @@ const buildingData = [
     power: 50,
     baseValue: 1,
     bonusValue: 5,
-    constructionTime: 60 // 1 minute
+    constructionTime: 80
   },
   {
     id: 7,
@@ -265,7 +279,7 @@ const buildingData = [
     power: 100,
     baseValue: 1,
     bonusValue: 10,
-    constructionTime: 90 // 1.5 minutes
+    constructionTime: 120 // 1.5 minutes
   },
   {
     id: 9,
@@ -291,23 +305,75 @@ const buildingData = [
     power: 100,
     baseValue: 1,
     bonusValue: 10,
-    constructionTime: 90 // 1.5 minutes
+    constructionTime: 120 // 1.5 minutes
   },
   {
     id: 11,
     name: 'Tower',
     fieldType: 0,
     description: 'The Tower is used to send early warnings of invasions. The higher its level, the more detailed information you gain.',
-    costs: { f: 0, w: 500, s: 500, o: 100, g: 100 },
+    costs: { f: 200, w: 300, s: 500, o: 100, g: 50 },
     requirements: { age: 1 },
     slug: 'tower',
-    power: 400,
+    power: 300,
     baseValue: 0,
     bonusValue: 0,
-    constructionTime: 150 // 2.5 minutes
+    constructionTime: 180 // 3 minutes
   },
   {
     id: 12,
+    name: 'Farm',
+    fieldType: 0,
+    description: 'Farms produce food for your city. Higher level farms produce more food per cycle.',
+    costs: { f: 100, w: 200, s: 100, o: 0, g: 25 },
+    requirements: { age: 1 },
+    slug: 'farm',
+    power: 50,
+    baseValue: 20,
+    bonusValue: 5,
+    constructionTime: 80 // 1 minute
+  },
+  {
+    id: 13,
+    name: 'Lumbermill',
+    fieldType: 0,
+    description: 'Lumbermills harvest wood from the surrounding forests. Higher levels increase wood production.',
+    costs: { f: 150, w: 100, s: 200, o: 0, g: 25 },
+    requirements: { age: 1 },
+    slug: 'lumbermill',
+    power: 50,
+    baseValue: 15,
+    bonusValue: 5,
+    constructionTime: 80 // 1 minute
+  },
+  {
+    id: 14,
+    name: 'Quarry',
+    fieldType: 0,
+    description: 'Quarries extract stone from the earth. Higher levels provide more stone per cycle.',
+    costs: { f: 200, w: 150, s: 100, o: 100, g: 25 },
+    requirements: { age: 1 },
+    slug: 'quarry',
+    power: 50,
+    baseValue: 12,
+    bonusValue: 5,
+    constructionTime: 80 // 1 minute
+  },
+  {
+    id: 15,
+    name: 'Mine',
+    fieldType: 0,
+    description: 'Mines extract valuable ores from deep underground. Higher levels increase ore production.',
+    costs: { f: 250, w: 200, s: 150, o: 50, g: 50 },
+    requirements: { age: 1 },
+    slug: 'mine',
+    power: 50,
+    baseValue: 10,
+    bonusValue: 5,
+    constructionTime: 80 // 1 minute
+  },
+  {
+    id: 16,
     name: 'Storehouse',
     fieldType: 0,
     description: 'The Storehouse protects your Food, Wood, Stone, Ore, and Gold from being Plundered by your enemies. Upgrade your Storehouse to protect more Resources.',
@@ -317,10 +383,10 @@ const buildingData = [
     power: 200,
     baseValue: 0,
     bonusValue: 0,
-    constructionTime: 90 // 1.5 minutes
+    constructionTime: 180 // 1.5 minutes
   },
   {
-    id: 13,
+    id: 17,
     name: 'Wall',
     fieldType: 0,
     description: 'Walls provide your city with protection. Your Defensive units are built on your Wall. Higher levels allow you to build better Defensive units and increase your city\'s protection.',
@@ -333,46 +399,7 @@ const buildingData = [
     constructionTime: 300 // 5 minutes
   },
   {
-    id: 14,
-    name: 'Farm',
-    fieldType: 1,
-    description: 'Farms produce Food, important for buildings and for feeding your troops. Higher levels produce more Food.',
-    costs: { f: 200, w: 200, s: 0, o: 0, g: 0 },
-    requirements: { age: 1 },
-    slug: 'farm',
-    power: 100,
-    baseValue: 100,
-    bonusValue: 5,
-    constructionTime: 60 // 1 minute
-  },
-  {
-    id: 15,
-    name: 'Sawmill',
-    fieldType: 1,
-    description: 'Sawmills produce Wood, necessary for buildings and for training troops.',
-    costs: { f: 100, w: 300, s: 0, o: 0, g: 0 },
-    requirements: { age: 1 },
-    slug: 'lumber',
-    power: 100,
-    baseValue: 100,
-    bonusValue: 5,
-    constructionTime: 60 // 1 minute
-  },
-  {
-    id: 16,
-    name: 'Mine',
-    fieldType: 1,
-    description: 'Mines produce Stone and Ore. Stone is the foundation of your buildings, allowing them to withstand attacks and time. Ore is necessary to create any metal your city needs, from weapons to nails.',
-    costs: { f: 100, w: 200, s: 100, o: 0, g: 0 },
-    requirements: { age: 1 },
-    slug: 'mine',
-    power: 100,
-    baseValue: 100,
-    bonusValue: 5,
-    constructionTime: 60 // 1 minute
-  },
-  {
-    id: 17,
+    id: 18,
     name: 'Shrine',
     fieldType: 0,
     description: 'A sacred place that offers blessings to your people. Increases faith and grants random buffs to nearby buildings.',
@@ -574,7 +601,8 @@ async function main() {
           description: research.description,
           power: research.power,
           baseValue: research.baseValue,
-          bonusValue: research.bonusValue
+          bonusValue: research.bonusValue,
+          researchTime: research.researchTime
         }
       })
     }
@@ -698,8 +726,29 @@ async function main() {
         constructionEndsAt: null
       }
     })
+
+    // Create Academy building for chaos player
+    await prisma.playerBuilding.upsert({
+      where: {
+        cityId_plotId: {
+          cityId: chaosCity.id,
+          plotId: 'plot28'
+        }
+      },
+      update: {}, // Don't update anything if building exists
+      create: {
+        playerId: chaosPlayer.id,
+        buildingId: 3, // Academy building ID
+        cityId: chaosCity.id,
+        plotId: 'plot28', // Academy on plot 28
+        level: 1,
+        isConstructing: false,
+        constructionStartedAt: null,
+        constructionEndsAt: null
+      }
+    })
     
-    console.log('✅ Created default testing player "chaos" with city and Town Center')
+    console.log('✅ Created default testing player "chaos" with city, Town Center, and Academy')
     
     // Create chat rooms
     console.log('💬 Creating chat rooms...')

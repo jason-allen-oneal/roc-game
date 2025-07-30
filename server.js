@@ -3,6 +3,7 @@ const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
 const { PrismaClient } = require('@prisma/client');
+const os = require('os');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -159,7 +160,30 @@ app.prepare().then(() => {
 
   server.listen(port, (err) => {
     if (err) throw err;
-    console.log(`> Ready on http://${hostname}:${port}`);
-    console.log(`> Socket.IO server running on port ${port}`);
+    
+    // Get network interfaces
+    const interfaces = os.networkInterfaces();
+    const addresses = [];
+    
+    // Collect all IPv4 addresses
+    Object.keys(interfaces).forEach((name) => {
+      interfaces[name].forEach((interface) => {
+        if (interface.family === 'IPv4' && !interface.internal) {
+          addresses.push(interface.address);
+        }
+      });
+    });
+    
+    console.log('\n🚀 Server is running!');
+    console.log(`\n📍 Local:            http://localhost:${port}`);
+    
+    if (addresses.length > 0) {
+      addresses.forEach((address) => {
+        console.log(`📍 On Your Network:  http://${address}:${port}`);
+      });
+    }
+    
+    console.log(`\n🔌 Socket.IO server running on port ${port}`);
+    console.log(`\n📝 Press Ctrl+C to stop the server\n`);
   });
 }); 
